@@ -1636,6 +1636,7 @@
                     loginMessage.style.color = '#dc2626'; }
             }
 
+            // ===== دالة تسجيل الخروج =====
             async function logout() {
                 try {
                     await firebaseAuth.signOut();
@@ -1645,17 +1646,29 @@
                         firebaseListenerRef = null;
                     }
                     showMessage(T().firebase.logoutSuccess, 'success');
+                    // إعادة تعيين جميع البيانات وإعادة تحميل الواجهة
                     allHistoryData = {};
                     data = {};
                     originalStudentNames = [];
                     studentNames = [];
                     refreshUI();
                     updateFirebaseUI();
-                } catch (err) { console.error(err); }
+                    // إظهار نموذج تسجيل الدخول تلقائياً بعد تسجيل الخروج
+                    showLoginForm();
+                } catch (err) { 
+                    console.error(err);
+                    showMessage('حدث خطأ أثناء تسجيل الخروج', 'error');
+                }
             }
 
-            loginBtn.addEventListener('click', function() { if (currentUser) logout();
-                else showLoginForm(); });
+            loginBtn.addEventListener('click', function() { 
+                if (currentUser) {
+                    logout(); 
+                } else {
+                    showLoginForm(); 
+                }
+            });
+
             submitLogin.addEventListener('click', loginWithEmail);
             registerBtn.addEventListener('click', registerWithEmail);
             anonLogin.addEventListener('click', loginAnonymously);
@@ -1841,11 +1854,12 @@
             // ===== isAdminUser (المشرف الوحيد) =====
             function isAdminUser() {
                 if (!currentUser) return false;
+                // فقط هذا البريد الإلكتروني هو المشرف
                 var adminEmails = ['a7112119@gmail.com'];
                 return adminEmails.includes(currentUser.email);
             }
 
-            // ===== دالة الصلاحيات المعدلة (إظهار الفصول للمشرف) =====
+            // ===== دالة الصلاحيات =====
             function applyRoleVisibility() {
                 var isAdmin = isAdminUser();
                 var teacherElements = [document.getElementById('teacherCardContainer'), document.getElementById('students'), document.getElementById('controls'), document.getElementById('report')];
@@ -1853,7 +1867,6 @@
                 var chartsSection = document.getElementById('adminChartsSection');
                 if (isAdmin) {
                     teacherElements.forEach(el => { if (el) el.style.display = 'none'; });
-                    // تعديل: إظهار قائمة الفصول للمشرف بدلاً من إخفائها
                     if (classSection) classSection.style.display = '';
                     if (chartsSection) chartsSection.style.display = 'block';
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
@@ -1869,7 +1882,7 @@
                 }
             }
 
-            // ===== دالة التهيئة المعدلة (اختيار أول مشرف وقسم تلقائياً) =====
+            // ===== دالة التهيئة =====
             function init() {
                 if (isFirebaseInitialized && firebaseAuth.currentUser) {
                     currentUser = firebaseAuth.currentUser;
@@ -1880,7 +1893,6 @@
                 renderCalendar();
                 updateFirebaseUI();
 
-                // تحديد القسم والمسؤول الافتراضي تلقائياً لتظهر البيانات مباشرة
                 if (classesList && classesList.length > 0) {
                     currentClass = document.getElementById('classSelect').value || classesList[0];
                 }
