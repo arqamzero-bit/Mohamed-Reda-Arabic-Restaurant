@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الإشراف على المطعم المدرسي</title>
+    <title>نظام مراقبة مقصف المدرسة</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* === الأنماط الأساسية === */
+        /* جميع الأنماط كما هي، مع تعديلات طفيفة لدعم RTL */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { padding: 15px; background: #f3f4f6; color: #111; transition: 0.3s; }
         .firebase-section { background: linear-gradient(135deg, #0b6e4f, #2d9b7a); color: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
@@ -53,9 +53,6 @@
         .day-cell.today { border: 2px solid #34a853; font-weight: bold; }
         .day-cell.active { background: #0b6e4f; color: white; font-weight: bold; box-shadow: 0 2px 5px rgba(11,110,79,0.4); }
         .day-cell.empty { background: transparent; cursor: default; }
-        #languageToggle { text-align: center; margin-bottom: 12px; }
-        #languageToggle button { padding: 5px 10px; margin: 0 4px; border-radius: 5px; border: 1px solid #0b6e4f; background: white; color: #0b6e4f; cursor: pointer; font-weight: bold; font-size: 13px; }
-        #languageToggle button.active { background: #0b6e4f; color: white; }
         .top-section { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: flex-end; margin-bottom: 15px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 3px 5px rgba(0,0,0,0.05); }
         .control-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
         .control-group label { font-weight: bold; color: #0b6e4f; font-size: 13px; }
@@ -67,7 +64,7 @@
         .teacher-card { display: flex; align-items: center; background: linear-gradient(135deg, #0b6e4f, #2d9b7a); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 3px 5px -1px rgba(0,0,0,0.1); margin-bottom: 20px; animation: fadeInUp 0.5s forwards; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .teacher-icon { font-size: 2rem; background: rgba(255,255,255,0.2); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
-        [dir="rtl"] .teacher-icon { margin-left: 15px; } [dir="ltr"] .teacher-icon { margin-right: 15px; }
+        [dir="rtl"] .teacher-icon { margin-left: 15px; }
         .teacher-info h3 { margin: 0; font-size: 1.2rem; }
         .teacher-info p { margin: 3px 0 0; opacity: 0.9; font-size: 1rem; }
         h2 { text-align: center; margin-bottom: 12px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -83,7 +80,7 @@
         .btn-add-student { background: #0b6e4f; color: white; border: none; font-weight: bold; cursor: pointer; }
         #importExcelLabel { cursor: pointer; background: #0b6e4f; color: white; padding: 6px 10px; border-radius: 6px; display: inline-block; font-size: 12px; }
         #exportExcel { background: #059669; color: white; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
-        #students { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        #students { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
         .student-container { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border-radius: 10px; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .student { width: 100%; background: #0b6e4f; color: white; border-radius: 8px; text-align: center; padding: 12px 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .student:hover { transform: translateY(-2px); opacity: 0.95; }
@@ -138,38 +135,38 @@
 </head>
 <body>
 
-    <!-- ===== شريط Firebase ===== -->
+    <!-- شريط Firebase -->
     <div class="firebase-section">
-        <h3><i class="fas fa-utensils"></i> نظام الإشراف على المطعم المدرسي</h3>
+        <h3><i class="fas fa-utensils"></i> نظام مراقبة المقصف</h3>
         <div class="firebase-controls">
-            <button id="useLocalBtn" class="firebase-btn btn-local"><i class="fas fa-hdd"></i> تخزين محلي</button>
-            <button id="useCloudBtn" class="firebase-btn btn-cloud"><i class="fas fa-cloud"></i> تخزين سحابي</button>
+            <button id="useLocalBtn" class="firebase-btn btn-local"><i class="fas fa-hdd"></i> التخزين المحلي</button>
+            <button id="useCloudBtn" class="firebase-btn btn-cloud"><i class="fas fa-cloud"></i> التخزين السحابي</button>
             <button id="syncDataBtn" class="firebase-btn btn-sync"><i class="fas fa-sync-alt"></i> مزامنة</button>
-            <button id="loginBtn" class="firebase-btn btn-login"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
-            <button id="fixEmailsBtn" class="firebase-btn btn-fix-emails admin-only"><i class="fas fa-envelope"></i> تصحيح الأيميلات</button>
-            <button id="adminViewBtn" class="btn-admin admin-only"><i class="fas fa-eye"></i> عرض الكل (مشرف)</button>
-            <button id="exportAllDataBtn" class="firebase-btn btn-export-excel admin-only"><i class="fas fa-file-excel"></i> تصدير جميع البيانات</button>
-            <button id="deleteAllUsersBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-trash-alt"></i> حذف جميع المستخدمين</button>
-            <button id="clearAllDataBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-fire"></i> حذف كل البيانات</button>
+            <button id="loginBtn" class="firebase-btn btn-login"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <button id="fixEmailsBtn" class="firebase-btn btn-fix-emails admin-only"><i class="fas fa-envelope"></i> إصلاح البريد</button>
+            <button id="adminViewBtn" class="btn-admin admin-only"><i class="fas fa-eye"></i> عرض الكل (مدير)</button>
+            <button id="exportAllDataBtn" class="firebase-btn btn-export-excel admin-only"><i class="fas fa-file-excel"></i> تصدير الكل</button>
+            <button id="deleteAllUsersBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-trash-alt"></i> حذف المستخدمين</button>
+            <button id="clearAllDataBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-fire"></i> مسح الكل</button>
             <button id="viewAllDataBtn" class="firebase-btn btn-view-data admin-only"><i class="fas fa-database"></i> عرض قاعدة البيانات</button>
             <div id="firebaseStatus" class="firebase-status offline"><i class="fas fa-wifi"></i> غير متصل</div>
         </div>
     </div>
 
-    <!-- ===== نموذج تسجيل الدخول ===== -->
+    <!-- نموذج الدخول -->
     <div id="loginForm" class="firebase-login-form">
         <div class="login-input-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" placeholder="example@email.com"></div>
         <div class="login-input-group"><label>كلمة المرور</label><input type="password" id="loginPassword" placeholder="أدخل كلمة المرور"></div>
         <div class="login-buttons">
-            <button id="submitLogin" class="firebase-btn btn-cloud"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
-            <button id="registerBtn" class="firebase-btn btn-local"><i class="fas fa-user-plus"></i> حساب جديد</button>
-            <button id="anonLogin" class="firebase-btn btn-sync"><i class="fas fa-user-secret"></i> دخول كمجهول</button>
+            <button id="submitLogin" class="firebase-btn btn-cloud"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <button id="registerBtn" class="firebase-btn btn-local"><i class="fas fa-user-plus"></i> تسجيل</button>
+            <button id="anonLogin" class="firebase-btn btn-sync"><i class="fas fa-user-secret"></i> دخول مجهول</button>
             <button id="cancelLogin" class="firebase-btn btn-login"><i class="fas fa-times"></i> إلغاء</button>
         </div>
         <div id="loginMessage" style="margin-top:10px; font-size:12px;"></div>
     </div>
 
-    <!-- ===== التقويم ===== -->
+    <!-- التقويم -->
     <div class="calendar-wrapper" id="calendarWrapper">
         <div class="calendar-header">
             <button class="calendar-nav-btn" id="prevMonth"><i class="fas fa-chevron-right"></i></button>
@@ -180,149 +177,149 @@
         <div style="text-align:center; margin-top:10px;"><button class="firebase-btn btn-login" onclick="document.getElementById('calendarWrapper').classList.remove('show')">إغلاق التقويم</button></div>
     </div>
 
-    <!-- ===== القسم العلوي ===== -->
+    <!-- القسم العلوي -->
     <div class="top-section" id="topSection">
-        <div class="control-group"><label for="teacherSelect">اختر المشرف:</label><select id="teacherSelect"><option value="" disabled selected>-- اختر المشرف --</option></select></div>
+        <div class="control-group"><label for="teacherSelect">اختر المشرف:</label><select id="teacherSelect"><option value="" disabled selected>-- اختر مشرف --</option></select></div>
         <div class="control-group">
             <label>إدارة المشرفين:</label>
             <div style="display:flex; gap:4px;">
                 <input type="text" id="newTeacherName" placeholder="اسم المشرف...">
-                <select id="newTeacherSubject"><option value="" disabled selected>الدور</option><option value="مشرف مطعم">مشرف مطعم</option><option value="مساعد مشرف">مساعد مشرف</option></select>
+                <select id="newTeacherSubject"><option value="" disabled selected>الصلاحية</option><option value="مشرف مقصف">مشرف مقصف</option><option value="مساعد مشرف">مساعد مشرف</option></select>
             </div>
         </div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:flex-end;">
             <button id="addTeacherBtn" class="btn-add-teacher">➕ إضافة مشرف</button>
-            <label for="importTeachersExcel" id="importTeachersLabel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> تحميل مشرفين</label>
+            <label for="importTeachersExcel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> استيراد مشرفين</label>
             <input type="file" id="importTeachersExcel" accept=".xlsx" style="display:none;">
             <button id="deleteTeacherBtn" class="btn-delete-teacher">🗑️ حذف</button>
             <button id="deleteAllTeachersBtn" class="btn-delete-teacher">💥 حذف الكل</button>
         </div>
         <div class="control-group" id="classSelectSection">
-            <label for="classSelect">اختر القسم (الفصل):</label>
+            <label for="classSelect">اختر الصف:</label>
             <div style="display:flex; gap:4px; align-items:center;">
-                <select id="classSelect" style="flex:1;"><option value="4B">رابع B</option><option value="4D">رابع D</option><option value="5B">خامس B</option><option value="5D">خامس D</option><option value="6B">سادس B</option><option value="6D">سادس D</option><option value="7B">سابع B</option><option value="7D">سابع D</option><option value="8B">ثامن B</option><option value="8D">ثامن D</option><option value="9B">تاسع B</option><option value="9D">تاسع D</option><option value="10B">عاشر B</option><option value="10D">عاشر D</option><option value="11B">حادي عشر B</option><option value="11D">حادي عشر D</option><option value="12B">ثاني عشر B</option><option value="12D">ثاني عشر D</option></select>
-                <button id="addClassBtn" class="btn-add-teacher" style="background:#6366f1;">➕ إضافة قسم</button>
+                <select id="classSelect" style="flex:1;"><option value="4B">4ب</option><option value="4D">4د</option><option value="5B">5ب</option><option value="5D">5د</option><option value="6B">6ب</option><option value="6D">6د</option><option value="7B">7ب</option><option value="7D">7د</option><option value="8B">8ب</option><option value="8D">8د</option><option value="9B">9ب</option><option value="9D">9د</option><option value="10B">10ب</option><option value="10D">10د</option><option value="11B">11ب</option><option value="11D">11د</option><option value="12B">12ب</option><option value="12D">12د</option></select>
+                <button id="addClassBtn" class="btn-add-teacher" style="background:#6366f1;">➕ إضافة صف</button>
                 <button id="deleteClassBtn" class="btn-delete-teacher">🗑️ حذف</button>
             </div>
         </div>
     </div>
 
-    <!-- ===== بطاقة المشرف ===== -->
+    <!-- بطاقة المشرف -->
     <div id="teacherCardContainer"></div>
 
-    <!-- ===== لوحة الإحصائيات ===== -->
+    <!-- لوحة الإحصائيات -->
     <div class="stats-dashboard" id="statsDashboard">
-        <div class="stat-item green"><div class="value" id="statNow">0</div><div class="label">🟢 الطلاب في المطعم الآن</div></div>
+        <div class="stat-item green"><div class="value" id="statNow">0</div><div class="label">🟢 الطلاب في المقصف الآن</div></div>
         <div class="stat-item green"><div class="value" id="statCommitted">0</div><div class="label">✅ ملتزمون</div></div>
-        <div class="stat-item yellow"><div class="value" id="statWarnings">0</div><div class="label">⚠️ تنبيهات</div></div>
+        <div class="stat-item yellow"><div class="value" id="statWarnings">0</div><div class="label">⚠️ تحذيرات</div></div>
         <div class="stat-item red"><div class="value" id="statViolations">0</div><div class="label">🚫 مخالفات</div></div>
-        <div class="stat-item red"><div class="value" id="statFights">0</div><div class="label">🥊 تشاجر</div></div>
+        <div class="stat-item red"><div class="value" id="statFights">0</div><div class="label">🥊 مشاجرات</div></div>
         <div class="stat-item red"><div class="value" id="statBullying">0</div><div class="label">🚫 تنمر</div></div>
-        <div class="stat-item blue"><div class="value" id="statBestClass">-</div><div class="label">🏆 أفضل فصل</div></div>
-        <div class="stat-item red"><div class="value" id="statWorstClass">-</div><div class="label">⚠️ أكثر فصل مخالفات</div></div>
+        <div class="stat-item blue"><div class="value" id="statBestClass">-</div><div class="label">🏆 أفضل صف</div></div>
+        <div class="stat-item red"><div class="value" id="statWorstClass">-</div><div class="label">⚠️ أسوأ صف</div></div>
     </div>
 
-    <!-- ===== عنوان اللوحة ===== -->
+    <!-- العنوان -->
     <h2>
         <button class="calendar-toggle-btn" id="toggleCalendarBtn" title="فتح التقويم"><i class="far fa-calendar-alt"></i></button>
-        <span id="boardTitleText">🍽️ لوحة إشراف المطعم</span>
+        <span id="boardTitleText">🍽️ لوحة مراقبة المقصف</span>
         <span id="currentDateDisplay" class="current-date-display"></span>
-        <button id="showYearReportBtn" class="year-report-btn"><i class="fas fa-file-excel"></i> تقرير شامل</button>
-        <button id="resetAllCountersBtn" class="reset-all-btn"><i class="fas fa-undo-alt"></i> تصفير اليوم</button>
+        <button id="showYearReportBtn" class="year-report-btn"><i class="fas fa-file-excel"></i> تقرير كامل</button>
+        <button id="resetAllCountersBtn" class="reset-all-btn"><i class="fas fa-undo-alt"></i> إعادة اليوم</button>
     </h2>
 
-    <!-- ===== أزرار التحكم ===== -->
+    <!-- أدوات التحكم -->
     <div id="controls">
         <input type="text" id="newStudentName" placeholder="أضف طالباً يدوياً...">
         <button id="addStudentBtn" class="btn-add-student">➕ إضافة طالب</button>
-        <label for="importExcel" id="importExcelLabel">📥 تحميل أسماء من Excel</label>
+        <label for="importExcel" id="importExcelLabel">📥 استيراد من إكسل</label>
         <input type="file" id="importExcel" accept=".xlsx" style="display:none;">
-        <button id="exportExcel">📤 تصدير Excel</button>
-        <input type="text" id="classTitle" placeholder="عنوان القسم...">
+        <button id="exportExcel">📤 تصدير إكسل</button>
+        <input type="text" id="classTitle" placeholder="عنوان الصف...">
     </div>
 
-    <!-- ===== بطاقات الطلاب ===== -->
+    <!-- بطاقات الطلاب -->
     <div id="students"></div>
 
-    <!-- ===== الجدول التفصيلي ===== -->
+    <!-- الجدول التفصيلي -->
     <div class="table-container">
         <table id="report">
             <thead>
                 <tr>
-                    <th>الاسم</th>
-                    <th>⭐ التقييم</th>
-                    <th>⏱️ دخول</th>
-                    <th>⏱️ خروج</th>
-                    <th>الحالة</th>
-                    <th>✅ إيجابيات</th>
-                    <th>🚫 مخالفات</th>
-                    <th>نظافة</th>
-                    <th>احترام</th>
-                    <th>تعاون</th>
-                    <th>تشاجر</th>
-                    <th>تنمر</th>
-                    <th>إزعاج</th>
-                    <th>رمي نفايات</th>
-                    <th>عبث بممتلكات</th>
-                    <th>نسبة الالتزام</th>
-                    <th>ملاحظات</th>
+                    <th data-key="name">الاسم</th>
+                    <th data-key="rating">⭐ التقييم</th>
+                    <th data-key="entry">⏱️ دخول</th>
+                    <th data-key="exit">⏱️ خروج</th>
+                    <th data-key="status">الحالة</th>
+                    <th data-key="positives">✅ إيجابيات</th>
+                    <th data-key="violations">🚫 مخالفات</th>
+                    <th data-key="clean">النظافة</th>
+                    <th data-key="respect">الاحترام</th>
+                    <th data-key="cooperate">التعاون</th>
+                    <th data-key="fight">مشاجرة</th>
+                    <th data-key="bullying">تنمر</th>
+                    <th data-key="noise">ضوضاء</th>
+                    <th data-key="litter">إلقاء نفايات</th>
+                    <th data-key="property">إتلاف ممتلكات</th>
+                    <th data-key="commitment">نسبة الالتزام</th>
+                    <th data-key="notes">ملاحظات</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
-    <!-- ===== المخططات ===== -->
+    <!-- الرسوم البيانية -->
     <div id="adminChartsSection">
-        <h3><i class="fa-solid fa-chart-line"></i> تحليلات المخالفات والإيجابيات</h3>
+        <h3><i class="fa-solid fa-chart-line"></i> تحليل المخالفات والإيجابيات</h3>
         <div class="charts-grid">
             <div class="chart-card"><h4>📊 المخالفات حسب النوع</h4><div class="chart-wrapper"><canvas id="violationChart"></canvas></div></div>
             <div class="chart-card"><h4>📈 الإيجابيات حسب النوع</h4><div class="chart-wrapper"><canvas id="positiveChart"></canvas></div></div>
         </div>
     </div>
 
-    <!-- ===== حاوية عرض البيانات ===== -->
+    <!-- حاوية البيانات -->
     <div id="adminDataContainer"></div>
 
-    <!-- ===== تذييل ===== -->
-    <div class="copyright-footer"><p>🍽️ نظام الإشراف على المطعم المدرسي - حقوق الملكية © 2026 محمد رضا عوف</p></div>
+    <!-- تذييل -->
+    <div class="copyright-footer"><p>🍽️ نظام مراقبة مقصف المدرسة - © 2026 محمد رضا عوف</p></div>
     <div id="trophyPopup">🏆</div>
 
-    <!-- ===== مودال تعديل الطالب ===== -->
+    <!-- نافذة تعديل -->
     <div id="editModal" class="modal-overlay">
         <div class="modal-content">
             <h3>تعديل بيانات الطالب</h3>
             <div class="modal-field"><label>الاسم:</label><span id="editStudentNameDisplay" style="font-weight:bold;"></span></div>
-            <div class="modal-field"><label>الحالة (0=ملتزم,1=متابعة):</label><input type="number" id="editState" min="0" max="1"></div>
+            <div class="modal-field"><label>الحالة (0=ملتزم،1=متابعة):</label><input type="number" id="editState" min="0" max="1"></div>
             <div class="modal-field"><label>وقت الدخول:</label><input type="time" id="editEntryTime"></div>
             <div class="modal-field"><label>وقت الخروج:</label><input type="time" id="editExitTime"></div>
-            <div class="modal-field"><label>نظافة:</label><input type="number" id="editClean" min="0"></div>
-            <div class="modal-field"><label>احترام:</label><input type="number" id="editRespect" min="0"></div>
-            <div class="modal-field"><label>تعاون:</label><input type="number" id="editCooperate" min="0"></div>
-            <div class="modal-field"><label>تشاجر:</label><input type="number" id="editFight" min="0"></div>
+            <div class="modal-field"><label>النظافة:</label><input type="number" id="editClean" min="0"></div>
+            <div class="modal-field"><label>الاحترام:</label><input type="number" id="editRespect" min="0"></div>
+            <div class="modal-field"><label>التعاون:</label><input type="number" id="editCooperate" min="0"></div>
+            <div class="modal-field"><label>مشاجرة:</label><input type="number" id="editFight" min="0"></div>
             <div class="modal-field"><label>تنمر:</label><input type="number" id="editBullying" min="0"></div>
-            <div class="modal-field"><label>إزعاج:</label><input type="number" id="editNoise" min="0"></div>
-            <div class="modal-field"><label>رمي نفايات:</label><input type="number" id="editLitter" min="0"></div>
-            <div class="modal-field"><label>عبث بممتلكات:</label><input type="number" id="editProperty" min="0"></div>
+            <div class="modal-field"><label>ضوضاء:</label><input type="number" id="editNoise" min="0"></div>
+            <div class="modal-field"><label>إلقاء نفايات:</label><input type="number" id="editLitter" min="0"></div>
+            <div class="modal-field"><label>إتلاف ممتلكات:</label><input type="number" id="editProperty" min="0"></div>
             <div class="modal-field"><label>ملاحظات:</label><input type="text" id="editNote"></div>
             <div class="modal-buttons"><button class="modal-save" id="editModalSave">💾 حفظ</button><button class="modal-cancel" id="editModalCancel">❌ إلغاء</button></div>
         </div>
     </div>
 
-    <!-- ===== مودال عرض الكل (مشرف) ===== -->
+    <!-- نافذة عرض المدير -->
     <div id="adminViewModal" class="admin-modal-overlay">
         <div class="admin-modal-content" style="max-width:95%; width:1400px;">
-            <h3><i class="fas fa-eye"></i> عرض جميع البيانات (مشرف)</h3>
+            <h3><i class="fas fa-eye"></i> جميع البيانات (مدير)</h3>
             <div class="admin-filters" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; background:#f3f4f6; padding:10px; border-radius:8px;">
                 <label>المشرف:</label><select id="adminTeacherFilter"><option value="all">الكل</option></select>
-                <label>القسم:</label><select id="adminClassFilter"><option value="all">الكل</option></select>
+                <label>الصف:</label><select id="adminClassFilter"><option value="all">الكل</option></select>
                 <label>التاريخ:</label><input type="date" id="adminDateFilter">
                 <button id="adminApplyFilterBtn" class="btn-admin" style="background:#0b6e4f;color:white;border:none;padding:6px 14px;border-radius:6px;">تطبيق</button>
                 <button id="adminResetFilterBtn" class="btn-admin" style="background:#9ca3af;color:white;border:none;padding:6px 14px;border-radius:6px;">إعادة ضبط</button>
             </div>
             <div class="admin-table-container" style="overflow-x:auto; max-height:60vh; border:1px solid #ddd; border-radius:6px;">
                 <table id="adminViewTable">
-                    <thead><tr><th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
+                    <thead><tr><th>المشرف</th><th>الصف</th><th>التاريخ</th><th>الطالب</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>النظافة</th><th>الاحترام</th><th>التعاون</th><th>مشاجرة</th><th>تنمر</th><th>ضوضاء</th><th>نفايات</th><th>إتلاف</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -333,7 +330,7 @@
     </div>
 
     <script>
-        // ===== إعدادات Firebase =====
+        // ===== إعدادات Firebase (بدون تغيير) =====
         var firebaseConfig = {
             apiKey: "AIzaSyCTQUJV6erfDYbjId7xpuRDPwTmaGGk4e4",
             authDomain: "mohamedreda-718c9.firebaseapp.com",
@@ -344,20 +341,20 @@
             measurementId: "G-9QP9FDF9MR"
         };
         var firebaseApp, firebaseAuth, firebaseDb, isFirebaseInitialized = false;
-        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("خطأ في تهيئة Firebase", e); }
+        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("Firebase init error", e); }
 
         document.addEventListener("DOMContentLoaded", function() {
-            // ===== البيانات الافتراضية =====
+            // ===== بيانات افتراضية بالعربية =====
             var defaultSupervisors = [
-                { id: 's1', name: "أحمد الناصر", subject: "مشرف مطعم", icon: "fa-user-tie" },
+                { id: 's1', name: "أحمد الناصر", subject: "مشرف مقصف", icon: "fa-user-tie" },
                 { id: 's2', name: "خالد السعيد", subject: "مساعد مشرف", icon: "fa-user-tie" }
             ];
-            var defaultClasses = ['4B','4D','5B','5D','6B','6D','7B','7D','8B','8D','9B','9D','10B','10D','11B','11D','12B','12D'];
+            var defaultClasses = ['4ب','4د','5ب','5د','6ب','6د','7ب','7د','8ب','8د','9ب','9د','10ب','10د','11ب','11د','12ب','12د'];
             var CLASSES_STORAGE_KEY = 'classes_list';
 
             var supervisorsList = JSON.parse(localStorage.getItem('supervisors_list')) || defaultSupervisors;
             var classesList = JSON.parse(localStorage.getItem(CLASSES_STORAGE_KEY)) || defaultClasses;
-            var currentLang = 'ar'; // ثابت عربي
+            var currentLang = 'ar'; // لغة عربية
             var currentSupervisorId = null;
             var currentClass = null;
             var storageMode = localStorage.getItem('storage_mode') || 'local';
@@ -366,11 +363,11 @@
             var studentNames = [];
             var calendarDate = new Date();
             var selectedDate = new Date();
-            var data = {};               // بيانات اليوم الحالي
-            var allHistoryData = {};     // { dateKey: { studentName: { ... } } }
+            var data = {};
+            var allHistoryData = {};
             var selectedStudent = null;
 
-            // ===== عناصر DOM =====
+            // ===== العناصر DOM =====
             var teacherSelect = document.getElementById("teacherSelect");
             var classSelect = document.getElementById("classSelect");
             var teacherCardContainer = document.getElementById("teacherCardContainer");
@@ -417,7 +414,6 @@
             var viewAllDataBtn = document.getElementById("viewAllDataBtn");
             var importExcel = document.getElementById("importExcel");
             var exportExcel = document.getElementById("exportExcel");
-            var importTeachersLabel = document.getElementById("importTeachersLabel");
 
             var editModal = document.getElementById('editModal');
             var editStudentNameDisplay = document.getElementById('editStudentNameDisplay');
@@ -436,39 +432,35 @@
             var editModalSave = document.getElementById('editModalSave');
             var editModalCancel = document.getElementById('editModalCancel');
 
-            // ===== قاموس الترجمة (عربي كامل) =====
-            var translations = {
-                ar: {
-                    boardTitle: "🍽️ لوحة إشراف المطعم",
-                    deleteSupervisor: "حذف المشرف 🗑️",
-                    deleteStudent: "حذف الطالب 🗑️",
-                    deleteAll: "💥 حذف الكل",
-                    importLabel: "<i class='fas fa-file-excel'></i> تحميل مشرفين",
-                    confirmDeleteSupervisor: "هل أنت متأكد من حذف المشرف الحالي؟",
-                    confirmDeleteStudent: function(n){ return 'هل أنت متأكد من حذف الطالب: '+n+'؟'; },
-                    confirmDeleteAll: "هل أنت متأكد من حذف جميع المشرفين؟",
-                    errorSelectSupervisor: "الرجاء اختيار مشرف أولاً",
-                    errorSelectClass: "الرجاء اختيار القسم أولاً",
-                    studentAdded: "تمت إضافة الطالب",
-                    supervisorDeleted: "تم حذف المشرف",
-                    studentDeleted: "تم حذف الطالب",
-                    allDeleted: "تم حذف جميع المشرفين",
-                    newSupervisorPlaceholder: "اسم المشرف...",
-                    newStudentPlaceholder: "أضف طالباً...",
-                    resetConfirm: "هل تريد تصفير جميع عدادات اليوم؟",
-                    resetSuccess: "تم تصفير اليوم",
-                    entry: "دخول",
-                    exit: "خروج",
-                    committed: "ملتزم",
-                    needsFollow: "يحتاج متابعة",
-                    positiveLabels: { clean:"نظافة", respect:"احترام", cooperate:"تعاون" },
-                    violationLabels: { fight:"تشاجر", bullying:"تنمر", noise:"إزعاج", litter:"رمي نفايات", property:"عبث بممتلكات" },
-                    firebase: { online:"متصل بالسحابة", offline:"تخزين محلي", syncSuccess:"تمت المزامنة", syncError:"خطأ في المزامنة", loginSuccess:"تم الدخول", logoutSuccess:"تم الخروج", registerSuccess:"تم التسجيل", authError:"خطأ" },
-                    calendar: { days:["أحد","إثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"], months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"] }
-                }
+            // ===== النصوص العربية =====
+            var T = {
+                boardTitle: "🍽️ لوحة مراقبة المقصف",
+                deleteSupervisor: "🗑️ حذف المشرف",
+                deleteStudent: "🗑️ حذف الطالب",
+                deleteAll: "💥 حذف الكل",
+                importLabel: "<i class='fas fa-file-excel'></i> استيراد مشرفين",
+                confirmDeleteSupervisor: "هل أنت متأكد من حذف هذا المشرف؟",
+                confirmDeleteStudent: function(n){ return 'هل أنت متأكد من حذف الطالب: ' + n + '؟'; },
+                confirmDeleteAll: "هل أنت متأكد من حذف جميع المشرفين؟",
+                errorSelectSupervisor: "الرجاء اختيار مشرف أولاً",
+                errorSelectClass: "الرجاء اختيار صف أولاً",
+                studentAdded: "تم إضافة الطالب بنجاح",
+                supervisorDeleted: "تم حذف المشرف بنجاح",
+                studentDeleted: "تم حذف الطالب بنجاح",
+                allDeleted: "تم حذف جميع المشرفين بنجاح",
+                newSupervisorPlaceholder: "اسم المشرف...",
+                newStudentPlaceholder: "أضف طالباً يدوياً...",
+                resetConfirm: "هل تريد إعادة ضبط جميع العدادات لليوم؟",
+                resetSuccess: "تم إعادة ضبط بيانات اليوم",
+                entry: "دخول",
+                exit: "خروج",
+                committed: "ملتزم",
+                needsFollow: "بحاجة متابعة",
+                positiveLabels: { clean:"النظافة", respect:"الاحترام", cooperate:"التعاون" },
+                violationLabels: { fight:"مشاجرة", bullying:"تنمر", noise:"ضوضاء", litter:"نفايات", property:"إتلاف" },
+                firebase: { online:"متصل بالسحابة", offline:"التخزين المحلي", syncSuccess:"تمت المزامنة بنجاح", syncError:"خطأ في المزامنة", loginSuccess:"تم الدخول", logoutSuccess:"تم الخروج", registerSuccess:"تم التسجيل", authError:"خطأ في المصادقة" },
+                calendar: { days:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"], months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"] }
             };
-
-            function t() { return translations['ar']; }
 
             // ===== دوال مساعدة =====
             function formattedSelectedDate() {
@@ -520,7 +512,7 @@
                 }
             }
 
-            // ===== دوال الأقسام =====
+            // ===== الصفوف =====
             function saveClassesList() { localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(classesList)); }
             function updateClassSelect() {
                 var sel = document.getElementById('classSelect');
@@ -532,23 +524,23 @@
                 if(currentClass && !classesList.includes(currentClass)) currentClass = null;
             }
             function addNewClass() {
-                var newC = prompt('📚 أدخل اسم القسم الجديد:');
+                var newC = prompt('📚 أدخل اسم الصف الجديد:');
                 if(!newC) return;
-                newC = newC.trim().toUpperCase();
-                if(!newC || classesList.includes(newC)) { showMessage('⚠️ اسم مكرر أو غير صحيح','error'); return; }
+                newC = newC.trim();
+                if(!newC || classesList.includes(newC)) { showMessage('⚠️ اسم مكرر أو غير صالح','error'); return; }
                 classesList.push(newC);
                 saveClassesList();
                 updateClassSelect();
                 document.getElementById('classSelect').value = newC;
                 currentClass = newC;
-                showMessage('✅ تم إضافة القسم '+newC,'success');
+                showMessage('✅ تم إضافة الصف '+newC,'success');
                 if(currentSupervisorId) loadData();
             }
             function deleteCurrentClass() {
                 var cls = document.getElementById('classSelect').value;
                 if(!cls) return;
-                if(classesList.length<=1) { showMessage('❌ لا يمكن حذف القسم الأخير','error'); return; }
-                if(!confirm('🗑️ حذف القسم '+cls+'؟')) return;
+                if(classesList.length<=1) { showMessage('❌ لا يمكن حذف الصف الأخير','error'); return; }
+                if(!confirm('🗑️ حذف الصف '+cls+'؟')) return;
                 classesList = classesList.filter(c=>c!==cls);
                 saveClassesList();
                 updateClassSelect();
@@ -557,10 +549,10 @@
                 else { initStudentsUI(); updateTable(); }
             }
 
-            // ===== دوال المشرفين =====
+            // ===== المشرفون =====
             function saveSupervisorsList() { localStorage.setItem('supervisors_list', JSON.stringify(supervisorsList)); }
             function initSupervisorSelect() {
-                teacherSelect.innerHTML = '<option value="" disabled selected>-- اختر المشرف --</option>';
+                teacherSelect.innerHTML = '<option value="" disabled selected>-- اختر مشرف --</option>';
                 supervisorsList.forEach(s=>{
                     var opt=document.createElement('option');
                     opt.value=s.id;
@@ -573,11 +565,11 @@
                 var sup = supervisorsList.find(s=>s.id===id);
                 if(!sup) return;
                 var icon = sup.icon || 'fa-user-tie';
-                teacherCardContainer.innerHTML = '<div class="teacher-card"><div class="teacher-icon"><i class="fa-solid '+icon+'"></i></div><div class="teacher-info"><h3>'+sup.name+'</h3><p>الدور: '+sup.subject+'</p></div></div>';
+                teacherCardContainer.innerHTML = '<div class="teacher-card"><div class="teacher-icon"><i class="fa-solid '+icon+'"></i></div><div class="teacher-info"><h3>'+sup.name+'</h3><p>الصلاحية: '+sup.subject+'</p></div></div>';
                 if(currentClass) loadData();
             }
 
-            // ===== دوال البيانات =====
+            // ===== البيانات =====
             function ensureAllStudentsInData() {
                 var dateKey = formattedSelectedDate();
                 if(!allHistoryData[dateKey]) allHistoryData[dateKey] = {};
@@ -626,7 +618,7 @@
                     lastUpdated: new Date().toISOString()
                 };
                 try { await firebaseDb.ref(path).set(saveData); return true; }
-                catch(e) { console.error(e); showMessage(t().firebase.syncError,'error'); return false; }
+                catch(e) { console.error(e); showMessage(T.firebase.syncError,'error'); return false; }
             }
 
             async function loadFromFirebase() {
@@ -639,7 +631,7 @@
                     if(fbData) {
                         if(fbData.datesData) { allHistoryData = fbData.datesData; localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData)); }
                         if(fbData.originalStudentNames) { originalStudentNames = fbData.originalStudentNames; localStorage.setItem(STORAGE_KEY_ORIGINAL_NAMES(), JSON.stringify(originalStudentNames)); }
-                        if(fbData.supervisorName) boardTitleEl.textContent = t().boardTitle + ' - ' + fbData.supervisorName;
+                        if(fbData.supervisorName) boardTitleEl.textContent = T.boardTitle + ' - ' + fbData.supervisorName;
                         loadDataFromLocalStorage();
                         return true;
                     }
@@ -652,7 +644,8 @@
                 var loaded = false;
                 if(storageMode==='cloud' && currentUser && isFirebaseInitialized) loaded = await loadFromFirebase();
                 if(!loaded) loadDataFromLocalStorage();
-                updateDisplayNames();
+                // الأسماء الأصلية بالفعل عربية، لا حاجة للتحويل
+                studentNames = originalStudentNames.slice(); // نسخ
                 ensureAllStudentsInData();
                 updateDateDisplay();
                 initStudentsUI();
@@ -661,17 +654,12 @@
                 applyRoleVisibility();
             }
 
-            function updateDisplayNames() {
-                // بما أن اللغة عربية فقط، نستخدم الأسماء الأصلية
-                studentNames = originalStudentNames.slice();
-            }
-
             function updateDateDisplay() { currentDateDisplayEl.textContent = formattedSelectedDate(); }
 
-            // ===== دوال التقويم =====
+            // ===== التقويم =====
             function renderCalendar() {
                 calendarGrid.innerHTML = '';
-                var t = translations['ar'].calendar;
+                var t = T.calendar;
                 t.days.forEach(d=>{ var h=document.createElement('div'); h.className='calendar-day-name'; h.textContent=d; calendarGrid.appendChild(h); });
                 var year=calendarDate.getFullYear(), month=calendarDate.getMonth();
                 calendarTitle.textContent = t.months[month] + ' ' + year;
@@ -690,7 +678,7 @@
                     if(ds===selStr) cell.classList.add('active');
                     cell.addEventListener('click', (function(y,m,d){
                         return function(){
-                            if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً أولاً','error'); return; }
+                            if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً أولاً','error'); return; }
                             var oldKey = formattedSelectedDate();
                             allHistoryData[oldKey] = data;
                             selectedDate = new Date(y,m,d);
@@ -708,7 +696,7 @@
                 }
             }
 
-            // ===== دوال الطلاب والواجهة =====
+            // ===== واجهة الطلاب =====
             function initStudentsUI() {
                 studentsContainer.innerHTML = '';
                 studentNames.forEach(displayName=>{
@@ -731,7 +719,7 @@
                 var originalName = (idx!==-1) ? originalStudentNames[idx] : displayName;
                 var sData = data[originalName] || {};
                 var state = sData.state || 0;
-                var stateText = state===0 ? t().committed : t().needsFollow;
+                var stateText = state===0 ? T.committed : T.needsFollow;
                 var stateColor = state===0 ? '#0b6e4f' : '#ea4335';
                 el.style.background = stateColor;
                 var entryDisplay = sData.entryTime ? '🟢 '+sData.entryTime : '';
@@ -742,7 +730,6 @@
                 var quickControls = document.createElement('div');
                 quickControls.className = 'quick-controls';
 
-                // أزرار الدخول والخروج
                 var btnEntry = document.createElement('button');
                 btnEntry.className = 'btn-entry';
                 btnEntry.textContent = '🟢 دخول';
@@ -757,22 +744,20 @@
                 btnExit.onclick = (function(dn){ return async function(e){ e.stopPropagation(); await recordExit(dn); }; })(displayName);
                 quickControls.appendChild(btnExit);
 
-                // السلوكيات الإيجابية
                 var positives = ['clean','respect','cooperate'];
-                var posLabels = t().positiveLabels;
+                var posLabels = T.positiveLabels;
+                var posIcons = { clean:'🧹', respect:'🤝', cooperate:'😊' };
                 positives.forEach(p=>{
                     var btn = document.createElement('button');
                     btn.className = 'btn-positive';
-                    var iconMap = { clean:'🧹', respect:'🤝', cooperate:'😊' };
-                    btn.textContent = iconMap[p] + ' ' + posLabels[p];
+                    btn.textContent = posIcons[p] + ' ' + posLabels[p];
                     btn.title = 'إضافة '+posLabels[p];
                     btn.onclick = (function(dn, key){ return async function(e){ e.stopPropagation(); await addPositive(dn, key); }; })(displayName, p);
                     quickControls.appendChild(btn);
                 });
 
-                // المخالفات
                 var violations = ['fight','bullying','noise','litter','property'];
-                var vioLabels = t().violationLabels;
+                var vioLabels = T.violationLabels;
                 var vioIcons = { fight:'🥊', bullying:'🚫', noise:'🔊', litter:'🗑️', property:'🪑' };
                 violations.forEach(v=>{
                     var btn = document.createElement('button');
@@ -783,7 +768,6 @@
                     quickControls.appendChild(btn);
                 });
 
-                // زر تعديل
                 var btnEdit = document.createElement('button');
                 btnEdit.textContent = '✏️';
                 btnEdit.className = 'btn-positive';
@@ -791,11 +775,10 @@
                 btnEdit.onclick = (function(dn){ return function(e){ e.stopPropagation(); openEditModal(dn); }; })(displayName);
                 quickControls.appendChild(btnEdit);
 
-                // زر حذف
                 var btnDel = document.createElement('button');
                 btnDel.textContent = '🗑️';
                 btnDel.className = 'btn-violation';
-                btnDel.title = t().deleteStudent;
+                btnDel.title = T.deleteStudent;
                 btnDel.onclick = (function(dn){ return async function(e){ e.stopPropagation(); await deleteStudent(dn); }; })(displayName);
                 quickControls.appendChild(btnDel);
 
@@ -804,7 +787,7 @@
                 return container;
             }
 
-            // ===== دوال الإجراءات =====
+            // ===== الإجراءات =====
             async function recordEntry(displayName) {
                 var idx = studentNames.indexOf(displayName);
                 if(idx===-1) return;
@@ -842,7 +825,7 @@
                 data[originalName].positive[key] = (data[originalName].positive[key]||0) + 1;
                 await saveAll();
                 updateTable(); updateStats();
-                showMessage('✅ '+displayName+' +'+t().positiveLabels[key],'success');
+                showMessage('✅ '+displayName+' +'+T.positiveLabels[key],'success');
             }
 
             async function addViolation(displayName, key) {
@@ -857,26 +840,26 @@
                 if(totalVio > totalPos) data[originalName].state = 1;
                 await saveAll();
                 updateTable(); updateStats();
-                showMessage('🚫 '+displayName+' +'+t().violationLabels[key],'warning');
+                showMessage('🚫 '+displayName+' +'+T.violationLabels[key],'warning');
             }
 
             async function deleteStudent(displayName) {
                 var idx = studentNames.indexOf(displayName);
                 if(idx===-1) return;
                 var originalName = originalStudentNames[idx] || displayName;
-                if(!confirm(t().confirmDeleteStudent(displayName))) return;
+                if(!confirm(T.confirmDeleteStudent(displayName))) return;
                 originalStudentNames.splice(idx,1);
                 studentNames.splice(idx,1);
                 Object.keys(allHistoryData).forEach(d=>{ delete allHistoryData[d][originalName]; });
                 delete data[originalName];
                 await saveAll();
                 initStudentsUI(); updateTable(); updateStats();
-                showMessage(t().studentDeleted,'success');
+                showMessage(T.studentDeleted,'success');
             }
 
             async function resetToday() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً','error'); return; }
-                if(!confirm(t().resetConfirm)) return;
+                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
+                if(!confirm(T.resetConfirm)) return;
                 var dateKey = formattedSelectedDate();
                 allHistoryData[dateKey] = {};
                 data = {};
@@ -886,7 +869,7 @@
                 allHistoryData[dateKey] = data;
                 await saveAll();
                 initStudentsUI(); updateTable(); updateStats();
-                showMessage(t().resetSuccess,'success');
+                showMessage(T.resetSuccess,'success');
             }
 
             // ===== الإحصائيات =====
@@ -936,7 +919,6 @@
             // ===== الجدول =====
             function updateTable() {
                 tbody.innerHTML = '';
-                var t = t();
                 studentNames.forEach((displayName, idx)=>{
                     var originalName = originalStudentNames[idx] || displayName;
                     var sd = data[originalName] || {};
@@ -945,12 +927,12 @@
                     var totalPos = pos.clean+pos.respect+pos.cooperate;
                     var totalVio = vio.fight+vio.bullying+vio.noise+vio.litter+vio.property;
                     var commitment = totalPos+totalVio === 0 ? 100 : Math.round((totalPos / (totalPos+totalVio))*100);
-                    var status = sd.state===0 ? t.committed : t.needsFollow;
+                    var status = sd.state===0 ? T.committed : T.needsFollow;
                     var tr = document.createElement('tr');
 
                     var cells = [
                         displayName,
-                        sd.state===0 ? '⭐ ملتزم' : '⚠️ متابعة',
+                        sd.state===0 ? '⭐ ملتزم' : '⚠️ يحتاج متابعة',
                         sd.entryTime || '-',
                         sd.exitTime || '-',
                         status,
@@ -970,7 +952,7 @@
                 });
             }
 
-            // ===== مودال التعديل =====
+            // ===== نافذة التعديل =====
             function openEditModal(displayName) {
                 var idx = studentNames.indexOf(displayName);
                 if(idx===-1) return;
@@ -1018,7 +1000,7 @@
             editModalCancel.addEventListener('click', function(){ editModal.classList.remove('show'); });
             editModal.addEventListener('click', function(e){ if(e.target===editModal) editModal.classList.remove('show'); });
 
-            // ===== دوال المشرف =====
+            // ===== وظائف المدير =====
             function renderAdminCharts() {
                 if(!isAdminUser()) return;
                 var results = getAllLocalStorageData();
@@ -1043,7 +1025,7 @@
                 new Chart(ctxV, {
                     type: 'bar',
                     data: {
-                        labels: ['تشاجر','تنمر','إزعاج','رمي نفايات','عبث ممتلكات'],
+                        labels: ['مشاجرة','تنمر','ضوضاء','نفايات','إتلاف'],
                         datasets: [{ label: 'المخالفات', data: [vioCounts.fight, vioCounts.bullying, vioCounts.noise, vioCounts.litter, vioCounts.property], backgroundColor: 'rgba(239,68,68,0.8)' }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
@@ -1052,7 +1034,7 @@
                 new Chart(ctxP, {
                     type: 'bar',
                     data: {
-                        labels: ['نظافة','احترام','تعاون'],
+                        labels: ['النظافة','الاحترام','التعاون'],
                         datasets: [{ label: 'الإيجابيات', data: [posCounts.clean, posCounts.respect, posCounts.cooperate], backgroundColor: 'rgba(16,185,129,0.8)' }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
@@ -1110,9 +1092,9 @@
                 var results = getAllLocalStorageData();
                 results.forEach(r=>{
                     var tr=document.createElement('tr');
-                    var cells = [r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state===0?'ملتزم':'متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property,
-                        (r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property)===0?100:Math.round(((r.clean+r.respect+r.cooperate)/(r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property))*100)+'%', r.note
-                    ];
+                    var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
+                    var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
+                    var cells = [r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state===0?'ملتزم':'بحاجة متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property, ratio+'%', r.note];
                     cells.forEach(v=>{ var td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
                     tbodyAdmin.appendChild(tr);
                 });
@@ -1126,9 +1108,9 @@
                 }
             }
 
-            // ===== أزرار المشرف =====
+            // ===== أزرار المدير =====
             adminViewBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
                 var f1=document.getElementById('adminTeacherFilter');
                 f1.innerHTML='<option value="all">الكل</option>';
                 supervisorsList.forEach(s=>{ var opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; f1.appendChild(opt); });
@@ -1148,17 +1130,16 @@
             document.getElementById('adminCloseModalBtn').onclick = function(){ document.getElementById('adminViewModal').classList.remove('show'); };
             document.getElementById('adminViewModal').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('show'); });
 
-            // ===== تصدير جميع البيانات (4 شيتات) =====
+            // ===== تصدير كل البيانات (4 ورقات) =====
             exportAllDataBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
                 var results = getAllLocalStorageData();
-                if(results.length===0) { showMessage('لا توجد بيانات','warning'); return; }
+                if(results.length===0) { showMessage('لا توجد بيانات للتصدير','warning'); return; }
                 var wb = new ExcelJS.Workbook();
                 var style = { alignment:{horizontal:'center',vertical:'middle'}, border:{top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}} };
 
-                // شيت 1: ملخص المشرفين
                 var ws1 = wb.addWorksheet('ملخص المشرفين');
-                ws1.addRow(['المشرف','القسم','عدد الطلاب','عدد الإيجابيات','عدد المخالفات','نسبة الالتزام']);
+                ws1.addRow(['المشرف','الصف','عدد الطلاب','الإيجابيات','المخالفات','نسبة الالتزام']);
                 var supStats = {};
                 results.forEach(r=>{
                     var key = r.supervisor+'||'+r.class;
@@ -1175,17 +1156,15 @@
                 });
                 ws1.columns.forEach(c=>c.width=18);
 
-                // شيت 2: كل السجلات
-                var ws2 = wb.addWorksheet('كل السجلات');
-                ws2.addRow(['المشرف','القسم','التاريخ','الطالب','دخول','خروج','الحالة','نظافة','احترام','تعاون','تشاجر','تنمر','إزعاج','رمي نفايات','عبث ممتلكات','نسبة الالتزام','ملاحظات']);
+                var ws2 = wb.addWorksheet('جميع السجلات');
+                ws2.addRow(['المشرف','الصف','التاريخ','الطالب','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام','ملاحظات']);
                 results.forEach(r=>{
                     var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
                     var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
-                    ws2.addRow([r.supervisor,r.class,r.date,r.student,r.entryTime,r.exitTime,r.state===0?'ملتزم':'متابعة',r.clean,r.respect,r.cooperate,r.fight,r.bullying,r.noise,r.litter,r.property,ratio+'%',r.note]);
+                    ws2.addRow([r.supervisor,r.class,r.date,r.student,r.entryTime,r.exitTime,r.state===0?'ملتزم':'بحاجة متابعة',r.clean,r.respect,r.cooperate,r.fight,r.bullying,r.noise,r.litter,r.property,ratio+'%',r.note]);
                 });
                 ws2.columns.forEach(c=>c.width=14);
 
-                // شيت 3: ملخص الطلاب
                 var ws3 = wb.addWorksheet('ملخص الطلاب');
                 var studentSum = {};
                 results.forEach(r=>{
@@ -1193,7 +1172,7 @@
                     studentSum[r.student].pos += (r.clean+r.respect+r.cooperate);
                     studentSum[r.student].vio += (r.fight+r.bullying+r.noise+r.litter+r.property);
                 });
-                ws3.addRow(['الطالب','إجمالي الإيجابيات','إجمالي المخالفات','نسبة الالتزام']);
+                ws3.addRow(['الطالب','مجموع الإيجابيات','مجموع المخالفات','نسبة الالتزام']);
                 Object.keys(studentSum).forEach(s=>{
                     var t = studentSum[s];
                     var ratio = t.pos+t.vio===0?100:Math.round((t.pos/(t.pos+t.vio))*100);
@@ -1201,7 +1180,6 @@
                 });
                 ws3.columns.forEach(c=>c.width=20);
 
-                // شيت 4: إحصائيات عامة
                 var ws4 = wb.addWorksheet('إحصائيات عامة');
                 var totalPos=0,totalVio=0,totalStudents=new Set();
                 results.forEach(r=>{
@@ -1209,7 +1187,7 @@
                     totalVio += (r.fight+r.bullying+r.noise+r.litter+r.property);
                     totalStudents.add(r.student);
                 });
-                ws4.addRow(['البند','القيمة']);
+                ws4.addRow(['العنصر','القيمة']);
                 ws4.addRow(['إجمالي الطلاب', totalStudents.size]);
                 ws4.addRow(['إجمالي الإيجابيات', totalPos]);
                 ws4.addRow(['إجمالي المخالفات', totalVio]);
@@ -1220,27 +1198,27 @@
                     var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
                     var a=document.createElement('a');
                     a.href=URL.createObjectURL(blob);
-                    a.download='تقرير_المطعم_الشامل_'+formattedSelectedDate()+'.xlsx';
+                    a.download='تقرير_المقصف_الكامل_'+formattedSelectedDate()+'.xlsx';
                     a.click();
                     URL.revokeObjectURL(a.href);
-                    showMessage('✅ تم تصدير التقرير الشامل','success');
+                    showMessage('✅ تم تصدير التقرير الكامل','success');
                 }).catch(e=>{ console.error(e); showMessage('❌ خطأ في التصدير','error'); });
             };
 
-            // ===== زر عرض قاعدة البيانات =====
+            // ===== عرض قاعدة البيانات =====
             viewAllDataBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
                 var results = getAllLocalStorageData();
                 if(results.length===0) { showMessage('لا توجد بيانات','warning'); return; }
                 var container = document.getElementById('adminDataContainer');
                 container.style.display='block';
                 container.innerHTML = `
                     <div style="display:flex; justify-content:space-between; border-bottom:2px solid #e5e7eb; padding-bottom:10px; margin-bottom:15px;">
-                        <h3><i class="fas fa-database"></i> قاعدة بيانات المطعم</h3>
+                        <h3><i class="fas fa-database"></i> قاعدة بيانات المقصف</h3>
                         <button onclick="document.getElementById('adminDataContainer').style.display='none'" style="background:#ef4444;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;">إغلاق</button>
                     </div>
                     <div class="stats-grid">
-                        <div class="stat-card green"><span>عدد السجلات</span><h2>${results.length}</h2></div>
+                        <div class="stat-card green"><span>السجلات</span><h2>${results.length}</h2></div>
                         <div class="stat-card green"><span>الطلاب الفريدون</span><h2>${new Set(results.map(r=>r.student)).size}</h2></div>
                         <div class="stat-card yellow"><span>إجمالي الإيجابيات</span><h2>${results.reduce((sum,r)=>sum+r.clean+r.respect+r.cooperate,0)}</h2></div>
                         <div class="stat-card red"><span>إجمالي المخالفات</span><h2>${results.reduce((sum,r)=>sum+r.fight+r.bullying+r.noise+r.litter+r.property,0)}</h2></div>
@@ -1248,13 +1226,13 @@
                     <div style="max-height:300px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:12px;">
                             <thead><tr style="background:#0b6e4f;color:#fff;position:sticky;top:0;">
-                                <th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th>
+                                <th>المشرف</th><th>الصف</th><th>التاريخ</th><th>الطالب</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>النظافة</th><th>الاحترام</th><th>التعاون</th><th>مشاجرة</th><th>تنمر</th><th>ضوضاء</th><th>نفايات</th><th>إتلاف</th><th>نسبة الالتزام</th>
                             </tr></thead>
                             <tbody>
                                 ${results.map(r=>{
                                     var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
                                     var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
-                                    return `<tr><td>${r.supervisor}</td><td>${r.class}</td><td>${r.date}</td><td>${r.student}</td><td>${r.entryTime}</td><td>${r.exitTime}</td><td>${r.state===0?'ملتزم':'متابعة'}</td><td>${r.clean}</td><td>${r.respect}</td><td>${r.cooperate}</td><td>${r.fight}</td><td>${r.bullying}</td><td>${r.noise}</td><td>${r.litter}</td><td>${r.property}</td><td>${ratio}%</td></tr>`;
+                                    return `<tr><td>${r.supervisor}</td><td>${r.class}</td><td>${r.date}</td><td>${r.student}</td><td>${r.entryTime}</td><td>${r.exitTime}</td><td>${r.state===0?'ملتزم':'بحاجة متابعة'}</td><td>${r.clean}</td><td>${r.respect}</td><td>${r.cooperate}</td><td>${r.fight}</td><td>${r.bullying}</td><td>${r.noise}</td><td>${r.litter}</td><td>${r.property}</td><td>${ratio}%</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -1268,10 +1246,10 @@
             classSelect.addEventListener('change', function(e){ currentClass=e.target.value; if(currentSupervisorId) loadData(); });
 
             addTeacherBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
                 var name = newTeacherNameInput.value.trim();
                 var role = newTeacherSubjectSelect.value;
-                if(!name || !role) { showMessage('أدخل الاسم والدور','error'); return; }
+                if(!name || !role) { showMessage('أدخل الاسم والصلاحية','error'); return; }
                 var newSup = { id:'s_'+Date.now(), name:name, subject:role, icon:'fa-user-tie' };
                 supervisorsList.push(newSup);
                 saveSupervisorsList();
@@ -1284,9 +1262,9 @@
             });
 
             deleteTeacherBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
-                if(!currentSupervisorId) { showMessage(t().errorSelectSupervisor,'error'); return; }
-                if(!confirm(t().confirmDeleteSupervisor)) return;
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if(!currentSupervisorId) { showMessage(T.errorSelectSupervisor,'error'); return; }
+                if(!confirm(T.confirmDeleteSupervisor)) return;
                 supervisorsList = supervisorsList.filter(s=>s.id!==currentSupervisorId);
                 saveSupervisorsList();
                 var keys = Object.keys(localStorage).filter(k=>k.indexOf('cafeteria_data_'+currentSupervisorId+'_')===0 || k.indexOf('cafeteria_names_'+currentSupervisorId+'_')===0);
@@ -1299,14 +1277,14 @@
                 teacherCardContainer.innerHTML='';
                 studentsContainer.innerHTML='';
                 tbody.innerHTML='';
-                boardTitleEl.textContent=t().boardTitle;
+                boardTitleEl.textContent=T.boardTitle;
                 initSupervisorSelect();
-                showMessage(t().supervisorDeleted,'success');
+                showMessage(T.supervisorDeleted,'success');
             });
 
             deleteAllTeachersBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
-                if(!confirm(t().confirmDeleteAll)) return;
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if(!confirm(T.confirmDeleteAll)) return;
                 supervisorsList = [];
                 saveSupervisorsList();
                 currentSupervisorId=null;
@@ -1314,13 +1292,13 @@
                 teacherCardContainer.innerHTML='';
                 studentsContainer.innerHTML='';
                 tbody.innerHTML='';
-                boardTitleEl.textContent=t().boardTitle;
+                boardTitleEl.textContent=T.boardTitle;
                 initSupervisorSelect();
-                showMessage(t().allDeleted,'success');
+                showMessage(T.allDeleted,'success');
             });
 
             importTeachersInput.addEventListener('change', function(e){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
                 var file=e.target.files[0];
                 if(!file) return;
                 var reader=new FileReader();
@@ -1332,13 +1310,13 @@
                         var added=0;
                         rows.forEach(row=>{
                             var name=row[0]?row[0].toString().trim():null;
-                            var role=(row[1]?row[1].toString().trim():null)||'مشرف مطعم';
+                            var role=(row[1]?row[1].toString().trim():null)||'مشرف مقصف';
                             if(name && !supervisorsList.find(s=>s.name===name)){
                                 supervisorsList.push({id:'s_'+Date.now()+'_'+Math.random().toString(36).substr(2,5), name:name, subject:role, icon:'fa-user-tie'});
                                 added++;
                             }
                         });
-                        if(added>0){ saveSupervisorsList(); initSupervisorSelect(); showMessage('تم استيراد '+added+' مشرف','success'); }
+                        if(added>0){ saveSupervisorsList(); initSupervisorSelect(); showMessage('تم استيراد '+added+' مشرفين','success'); }
                         else showMessage('لم يتم إضافة مشرفين','info');
                         importTeachersInput.value='';
                     }catch(err){ showMessage('خطأ في قراءة الملف','error'); }
@@ -1347,21 +1325,21 @@
             });
 
             addStudentBtn.addEventListener('click', async function(){
-                if(!currentSupervisorId || !currentClass) { showMessage(t().errorSelectSupervisor+' و '+t().errorSelectClass,'error'); return; }
+                if(!currentSupervisorId || !currentClass) { showMessage(T.errorSelectSupervisor+' و '+T.errorSelectClass,'error'); return; }
                 var name = newStudentNameInput.value.trim();
                 if(!name) { showMessage('أدخل اسم الطالب','error'); return; }
-                if(originalStudentNames.includes(name)) { showMessage('الطالب موجود','warning'); return; }
+                if(originalStudentNames.includes(name)) { showMessage('الطالب موجود بالفعل','warning'); return; }
                 originalStudentNames.push(name);
-                updateDisplayNames();
+                studentNames = originalStudentNames.slice();
                 data[name] = { state:0, entryTime:'', exitTime:'', positive:{clean:0,respect:0,cooperate:0}, violations:{fight:0,bullying:0,noise:0,litter:0,property:0}, note:'' };
                 newStudentNameInput.value='';
                 await saveAll();
                 initStudentsUI(); updateTable(); updateStats();
-                showMessage(t().studentAdded,'success');
+                showMessage(T.studentAdded,'success');
             });
 
             importExcel.addEventListener('change', async function(e){
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً','error'); return; }
+                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
                 var file=e.target.files[0];
                 if(!file) return;
                 var reader=new FileReader();
@@ -1372,23 +1350,23 @@
                         var rows=XLSX.utils.sheet_to_json(sheet,{header:1});
                         var names=rows.map(r=>r[0]).filter(Boolean).map(n=>n.toString().trim());
                         originalStudentNames = names;
-                        updateDisplayNames();
+                        studentNames = originalStudentNames.slice();
                         ensureAllStudentsInData();
                         initStudentsUI(); updateTable(); updateStats();
                         await saveAll();
                         showMessage('تم تحميل '+originalStudentNames.length+' طالب','success');
                         importExcel.value='';
-                    }catch(err){ showMessage('خطأ في الملف','error'); }
+                    }catch(err){ showMessage('خطأ في قراءة الملف','error'); }
                 };
                 reader.readAsBinaryString(file);
             });
 
             exportExcel.addEventListener('click', function() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً','error'); return; }
+                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
                 var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
                 var supName = sup?sup.name:'';
                 var rows = [];
-                var header = ['الاسم','التقييم','دخول','خروج','الحالة','نظافة','احترام','تعاون','تشاجر','تنمر','إزعاج','رمي نفايات','عبث ممتلكات','نسبة الالتزام','ملاحظات'];
+                var header = ['الاسم','التقييم','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام','ملاحظات'];
                 rows.push(header);
                 studentNames.forEach((dn,idx)=>{
                     var on = originalStudentNames[idx] || dn;
@@ -1399,10 +1377,10 @@
                     var ratio = total===0?100:Math.round(((pos.clean+pos.respect+pos.cooperate)/total)*100);
                     rows.push([
                         dn,
-                        sd.state===0?'ملتزم':'متابعة',
+                        sd.state===0?'ملتزم':'بحاجة متابعة',
                         sd.entryTime||'',
                         sd.exitTime||'',
-                        sd.state===0?'ملتزم':'متابعة',
+                        sd.state===0?'ملتزم':'بحاجة متابعة',
                         pos.clean, pos.respect, pos.cooperate,
                         vio.fight, vio.bullying, vio.noise, vio.litter, vio.property,
                         ratio+'%',
@@ -1411,8 +1389,8 @@
                 });
                 var wb = XLSX.utils.book_new();
                 var ws = XLSX.utils.aoa_to_sheet(rows);
-                XLSX.utils.book_append_sheet(wb, ws, 'المطعم');
-                XLSX.writeFile(wb, `تقرير_المطعم_${supName}_${currentClass}_${formattedSelectedDate()}.xlsx`);
+                XLSX.utils.book_append_sheet(wb, ws, 'المقصف');
+                XLSX.writeFile(wb, `تقرير_المقصف_${supName}_${currentClass}_${formattedSelectedDate()}.xlsx`);
             });
 
             resetAllCountersBtn.addEventListener('click', resetToday);
@@ -1422,19 +1400,19 @@
             nextMonthBtn.addEventListener('click', function(){ calendarDate.setMonth(calendarDate.getMonth()+1); renderCalendar(); });
 
             classTitleInput.addEventListener('input', function(){
-                boardTitleEl.textContent = t().boardTitle + ' - ' + classTitleInput.value;
+                boardTitleEl.textContent = T.boardTitle + ' - ' + classTitleInput.value;
             });
 
-            // ===== زر التقرير الشامل =====
+            // ===== زر التقرير الكامل =====
             document.getElementById('showYearReportBtn').onclick = async function() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً','error'); return; }
+                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
                 var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
                 var supName = sup?sup.name:'';
                 var wb = new ExcelJS.Workbook();
-                var ws = wb.addWorksheet('التقرير الشامل');
-                ws.addRow(['🍽️ تقرير المطعم المدرسي - '+supName+' - '+currentClass]);
+                var ws = wb.addWorksheet('التقرير الكامل');
+                ws.addRow(['🍽️ تقرير المقصف الكامل - '+supName+' - '+currentClass]);
                 ws.addRow([]);
-                ws.addRow(['الاسم','دخول','خروج','الحالة','نظافة','احترام','تعاون','تشاجر','تنمر','إزعاج','رمي نفايات','عبث ممتلكات','نسبة الالتزام']);
+                ws.addRow(['الاسم','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام']);
                 var sortedDates = Object.keys(allHistoryData).sort();
                 sortedDates.forEach(dateKey=>{
                     var dayData = allHistoryData[dateKey] || {};
@@ -1449,7 +1427,7 @@
                             dn,
                             sd.entryTime||'',
                             sd.exitTime||'',
-                            sd.state===0?'ملتزم':'متابعة',
+                            sd.state===0?'ملتزم':'بحاجة متابعة',
                             pos.clean, pos.respect, pos.cooperate,
                             vio.fight, vio.bullying, vio.noise, vio.litter, vio.property,
                             ratio+'%'
@@ -1461,26 +1439,25 @@
                 var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
                 var a=document.createElement('a');
                 a.href=URL.createObjectURL(blob);
-                a.download=`تقرير_المطعم_الشامل_${supName}_${currentClass}.xlsx`;
+                a.download=`تقرير_المقصف_الكامل_${supName}_${currentClass}.xlsx`;
                 a.click();
                 URL.revokeObjectURL(a.href);
-                showMessage('✅ تم تصدير التقرير الشامل','success');
+                showMessage('✅ تم تصدير التقرير الكامل','success');
             };
 
-            // ===== Firebase Auth =====
+            // ===== مصادقة Firebase =====
             function updateFirebaseUI() {
-                var t = translations['ar'];
                 if(currentUser) {
-                    var email = currentUser.email || t.firebase.offline;
+                    var email = currentUser.email || 'غير متصل';
                     firebaseStatus.innerHTML = '<i class="fas fa-user"></i> '+email.substring(0,20);
                     firebaseStatus.className = 'firebase-status online';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج';
+                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> خروج';
                     if(isAdminUser()) document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('show'));
                     else document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
                 } else {
-                    firebaseStatus.innerHTML = '<i class="fas fa-wifi"></i> '+t.firebase.offline;
+                    firebaseStatus.innerHTML = '<i class="fas fa-wifi"></i> '+T.firebase.offline;
                     firebaseStatus.className = 'firebase-status offline';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
                     document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
                 }
                 if(storageMode==='local') { useLocalBtn.style.opacity='1'; useCloudBtn.style.opacity='0.7'; }
@@ -1492,10 +1469,10 @@
             function setStorageMode(mode) {
                 storageMode=mode;
                 localStorage.setItem('storage_mode',mode);
-                if(mode==='cloud' && !currentUser) { showMessage(t.firebase.authError,'error'); showLoginForm(); return; }
+                if(mode==='cloud' && !currentUser) { showMessage(T.firebase.authError,'error'); showLoginForm(); return; }
                 updateFirebaseUI();
                 if(currentSupervisorId && currentClass) loadData();
-                showMessage(mode==='local'?'التخزين المحلي مفعل':'التخزين السحابي مفعل','success');
+                showMessage(mode==='local'?'التخزين المحلي نشط':'التخزين السحابي نشط','success');
             }
 
             function showLoginForm() { loginForm.classList.add('show'); loginMessage.textContent=''; }
@@ -1523,7 +1500,7 @@
             async function registerWithEmail() {
                 var email=loginEmail.value.trim(), pass=loginPassword.value.trim();
                 if(!email || !pass) { loginMessage.textContent='⚠️ أدخل البريد وكلمة المرور'; return; }
-                if(pass.length<6) { loginMessage.textContent='⚠️ كلمة المرور 6 أحرف على الأقل'; return; }
+                if(pass.length<6) { loginMessage.textContent='⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
                 loginMessage.textContent='⏳ جاري التسجيل...';
                 loginMessage.style.color='#4285f4';
                 try {
@@ -1541,20 +1518,20 @@
             }
 
             async function loginAnonymously() {
-                loginMessage.textContent='⏳ جاري الدخول كمجهول...';
+                loginMessage.textContent='⏳ جاري الدخول مجهولاً...';
                 try {
                     var cred = await firebaseAuth.signInAnonymously();
                     currentUser=cred.user;
                     await firebaseDb.ref('users/'+currentUser.uid+'/profile').set({name:'مجهول', role:'anonymous', createdAt:new Date().toISOString()});
                     loginMessage.textContent='✅ دخول مجهول';
                     loginMessage.style.color='#34a853';
-                    showMessage('دخول كمجهول','success');
+                    showMessage('تم الدخول مجهولاً','success');
                     setTimeout(()=>{ hideLoginForm(); updateFirebaseUI(); if(currentSupervisorId && currentClass) loadData(); renderAdminCharts(); }, 1000);
                 } catch(err) { loginMessage.textContent='❌ '+err.message; loginMessage.style.color='#dc2626'; }
             }
 
             async function logout() {
-                try { await firebaseAuth.signOut(); currentUser=null; showMessage(t().firebase.logoutSuccess,'success'); updateFirebaseUI(); allHistoryData={}; data={}; originalStudentNames=[]; studentNames=[]; initStudentsUI(); updateTable(); updateStats(); } catch(err){ console.error(err); }
+                try { await firebaseAuth.signOut(); currentUser=null; showMessage(T.firebase.logoutSuccess,'success'); updateFirebaseUI(); allHistoryData={}; data={}; originalStudentNames=[]; studentNames=[]; initStudentsUI(); updateTable(); updateStats(); } catch(err){ console.error(err); }
             }
 
             loginBtn.addEventListener('click', function(){ if(currentUser) logout(); else showLoginForm(); });
@@ -1565,22 +1542,22 @@
             useLocalBtn.addEventListener('click', function(){ setStorageMode('local'); });
             useCloudBtn.addEventListener('click', function(){ setStorageMode('cloud'); });
             syncDataBtn.addEventListener('click', async function(){
-                if(!currentUser || storageMode!=='cloud') { showMessage('فعّل السحابة وسجل دخول','error'); return; }
+                if(!currentUser || storageMode!=='cloud') { showMessage('فعّل السحابة وسجل الدخول','error'); return; }
                 var saved = await saveAll(true);
-                if(saved) showMessage(t().firebase.syncSuccess,'success');
+                if(saved) showMessage(T.firebase.syncSuccess,'success');
             });
 
-            // ===== حذف كل البيانات =====
+            // ===== مسح جميع البيانات =====
             clearAllDataBtn.addEventListener('click', async function() {
-                if(!isAdminUser()) { showMessage('صلاحية مشرف فقط','error'); return; }
-                if(!confirm('🔥 حذف كل البيانات؟ لا يمكن التراجع!')) return;
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if(!confirm('🔥 حذف جميع البيانات؟ لا يمكن التراجع!')) return;
                 if(prompt('اكتب "حذف" للتأكيد')!=='حذف') { showMessage('تم الإلغاء','error'); return; }
                 try {
                     var snap = await firebaseDb.ref('users').once('value');
                     var dbUsers=snap.val()||{};
                     for(var uid in dbUsers) {
                         var email = dbUsers[uid]?.profile?.email||'';
-                        if(email==='a7112119@gmail.com') { await firebaseDb.ref('users/'+uid+'/teachers').remove(); continue; }
+                        if(email==='a7112119@gmail.com') { await firebaseDb.ref('users/'+uid+'/supervisors').remove(); continue; }
                         await firebaseDb.ref('users/'+uid).remove();
                     }
                     localStorage.clear();
@@ -1595,16 +1572,16 @@
                     initSupervisorSelect();
                     updateClassSelect();
                     initStudentsUI(); updateTable(); updateStats();
-                    boardTitleEl.textContent=t().boardTitle;
-                    showMessage('✅ تم حذف كل البيانات','success');
+                    boardTitleEl.textContent=T.boardTitle;
+                    showMessage('✅ تم مسح جميع البيانات','success');
                     setTimeout(()=>location.reload(),1500);
                 } catch(err) { showMessage('❌ '+err.message,'error'); }
             });
 
             // ===== حذف جميع المستخدمين =====
             deleteAllUsersBtn.addEventListener('click', async function(){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف','error'); return; }
-                if(!confirm('حذف جميع المستخدمين ما عدا المشرف؟')) return;
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if(!confirm('حذف جميع المستخدمين ما عدا المدير؟')) return;
                 try {
                     var snap=await firebaseDb.ref('users').once('value');
                     var dbUsers=snap.val()||{};
@@ -1617,55 +1594,28 @@
                 } catch(err){ showMessage('❌ '+err.message,'error'); }
             });
 
-            // ===== تصحيح الأيميلات =====
+            // ===== إصلاح البريد الإلكتروني =====
             fixEmailsBtn.addEventListener('click', async function(){
-                if(!isAdminUser()) { showMessage('صلاحية مشرف','error'); return; }
-                showMessage('جاري تصحيح الأيميلات...','info');
+                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                showMessage('جاري إصلاح البريد...','info');
                 try {
                     var snap=await firebaseDb.ref('users').once('value');
                     var dbUsers=snap.val()||{};
                     var count=0;
                     for(var uid in dbUsers) {
                         if(!dbUsers[uid]?.profile?.email) {
-                            var email = prompt('أدخل بريد المستخدم (UID: '+uid.substring(0,12)+'...)');
+                            var email = prompt('أدخل البريد الإلكتروني للمستخدم (UID: '+uid.substring(0,12)+'...)');
                             if(email && email.trim()) { await firebaseDb.ref('users/'+uid+'/profile/email').set(email.trim()); count++; }
                         }
                     }
-                    showMessage('✅ تم تصحيح '+count+' بريد','success');
+                    showMessage('✅ تم إصلاح '+count+' بريد','success');
                 } catch(err){ showMessage('❌ '+err.message,'error'); }
             });
 
-            // ===== اللغة (عربي فقط) =====
-            function applyLanguage() {
-                var lang = 'ar';
-                document.body.dir='rtl';
-                document.documentElement.lang='ar';
-                var t = translations['ar'];
-                boardTitleEl.textContent = t.boardTitle + (classTitleInput.value ? ' - '+classTitleInput.value : '');
-                importExcelLabel.textContent = '📥 تحميل أسماء من Excel';
-                exportExcel.textContent = '📤 تصدير Excel';
-                newTeacherNameInput.placeholder = t.newSupervisorPlaceholder;
-                newStudentNameInput.placeholder = t.newStudentPlaceholder;
-                deleteTeacherBtn.textContent = t.deleteSupervisor;
-                deleteAllTeachersBtn.textContent = t.deleteAll;
-                importTeachersLabel.innerHTML = t.importLabel;
-                var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
-                if(sup) {
-                    var card = document.querySelector('.teacher-card .teacher-info p');
-                    if(card) card.textContent = 'الدور: '+sup.subject;
-                }
-                localStorage.setItem('dashboard_lang', lang);
-                updateDisplayNames();
-                initStudentsUI(); updateTable(); updateStats(); renderCalendar();
-                updateFirebaseUI();
-                applyRoleVisibility();
-            }
-
-            // ===== تهيئة =====
+            // ===== التهيئة =====
             function init() {
                 updateClassSelect();
                 initSupervisorSelect();
-                applyLanguage();
                 renderCalendar();
                 if(isFirebaseInitialized) {
                     firebaseAuth.onAuthStateChanged(function(user){
