@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مراقبة مقصف المدرسة</title>
+    <title>نظام الإشراف على المطعم المدرسي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* جميع الأنماط كما هي، مع تعديلات طفيفة لدعم RTL */
+        /* === الأنماط الأساسية (نفسها) === */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { padding: 15px; background: #f3f4f6; color: #111; transition: 0.3s; }
         .firebase-section { background: linear-gradient(135deg, #0b6e4f, #2d9b7a); color: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
@@ -53,6 +53,9 @@
         .day-cell.today { border: 2px solid #34a853; font-weight: bold; }
         .day-cell.active { background: #0b6e4f; color: white; font-weight: bold; box-shadow: 0 2px 5px rgba(11,110,79,0.4); }
         .day-cell.empty { background: transparent; cursor: default; }
+        #languageToggle { text-align: center; margin-bottom: 12px; }
+        #languageToggle button { padding: 5px 10px; margin: 0 4px; border-radius: 5px; border: 1px solid #0b6e4f; background: white; color: #0b6e4f; cursor: pointer; font-weight: bold; font-size: 13px; }
+        #languageToggle button.active { background: #0b6e4f; color: white; }
         .top-section { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: flex-end; margin-bottom: 15px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 3px 5px rgba(0,0,0,0.05); }
         .control-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
         .control-group label { font-weight: bold; color: #0b6e4f; font-size: 13px; }
@@ -64,7 +67,7 @@
         .teacher-card { display: flex; align-items: center; background: linear-gradient(135deg, #0b6e4f, #2d9b7a); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 3px 5px -1px rgba(0,0,0,0.1); margin-bottom: 20px; animation: fadeInUp 0.5s forwards; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .teacher-icon { font-size: 2rem; background: rgba(255,255,255,0.2); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
-        [dir="rtl"] .teacher-icon { margin-left: 15px; }
+        [dir="rtl"] .teacher-icon { margin-left: 15px; } [dir="ltr"] .teacher-icon { margin-right: 15px; }
         .teacher-info h3 { margin: 0; font-size: 1.2rem; }
         .teacher-info p { margin: 3px 0 0; opacity: 0.9; font-size: 1rem; }
         h2 { text-align: center; margin-bottom: 12px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -80,7 +83,7 @@
         .btn-add-student { background: #0b6e4f; color: white; border: none; font-weight: bold; cursor: pointer; }
         #importExcelLabel { cursor: pointer; background: #0b6e4f; color: white; padding: 6px 10px; border-radius: 6px; display: inline-block; font-size: 12px; }
         #exportExcel { background: #059669; color: white; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
-        #students { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        #students { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 15px; }
         .student-container { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border-radius: 10px; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .student { width: 100%; background: #0b6e4f; color: white; border-radius: 8px; text-align: center; padding: 12px 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .student:hover { transform: translateY(-2px); opacity: 0.95; }
@@ -135,38 +138,38 @@
 </head>
 <body>
 
-    <!-- شريط Firebase -->
+    <!-- ===== شريط Firebase ===== -->
     <div class="firebase-section">
-        <h3><i class="fas fa-utensils"></i> نظام مراقبة المقصف</h3>
+        <h3><i class="fas fa-utensils"></i> نظام الإشراف على المطعم المدرسي</h3>
         <div class="firebase-controls">
-            <button id="useLocalBtn" class="firebase-btn btn-local"><i class="fas fa-hdd"></i> التخزين المحلي</button>
-            <button id="useCloudBtn" class="firebase-btn btn-cloud"><i class="fas fa-cloud"></i> التخزين السحابي</button>
+            <button id="useLocalBtn" class="firebase-btn btn-local"><i class="fas fa-hdd"></i> تخزين محلي</button>
+            <button id="useCloudBtn" class="firebase-btn btn-cloud"><i class="fas fa-cloud"></i> تخزين سحابي</button>
             <button id="syncDataBtn" class="firebase-btn btn-sync"><i class="fas fa-sync-alt"></i> مزامنة</button>
-            <button id="loginBtn" class="firebase-btn btn-login"><i class="fas fa-sign-in-alt"></i> دخول</button>
-            <button id="fixEmailsBtn" class="firebase-btn btn-fix-emails admin-only"><i class="fas fa-envelope"></i> إصلاح البريد</button>
-            <button id="adminViewBtn" class="btn-admin admin-only"><i class="fas fa-eye"></i> عرض الكل (مدير)</button>
-            <button id="exportAllDataBtn" class="firebase-btn btn-export-excel admin-only"><i class="fas fa-file-excel"></i> تصدير الكل</button>
-            <button id="deleteAllUsersBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-trash-alt"></i> حذف المستخدمين</button>
-            <button id="clearAllDataBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-fire"></i> مسح الكل</button>
+            <button id="loginBtn" class="firebase-btn btn-login"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
+            <button id="fixEmailsBtn" class="firebase-btn btn-fix-emails admin-only"><i class="fas fa-envelope"></i> تصحيح الأيميلات</button>
+            <button id="adminViewBtn" class="btn-admin admin-only"><i class="fas fa-eye"></i> عرض الكل (مشرف)</button>
+            <button id="exportAllDataBtn" class="firebase-btn btn-export-excel admin-only"><i class="fas fa-file-excel"></i> تصدير جميع البيانات</button>
+            <button id="deleteAllUsersBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-trash-alt"></i> حذف جميع المستخدمين</button>
+            <button id="clearAllDataBtn" class="firebase-btn btn-danger admin-only"><i class="fas fa-fire"></i> حذف كل البيانات</button>
             <button id="viewAllDataBtn" class="firebase-btn btn-view-data admin-only"><i class="fas fa-database"></i> عرض قاعدة البيانات</button>
             <div id="firebaseStatus" class="firebase-status offline"><i class="fas fa-wifi"></i> غير متصل</div>
         </div>
     </div>
 
-    <!-- نموذج الدخول -->
+    <!-- ===== نموذج تسجيل الدخول ===== -->
     <div id="loginForm" class="firebase-login-form">
         <div class="login-input-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" placeholder="example@email.com"></div>
         <div class="login-input-group"><label>كلمة المرور</label><input type="password" id="loginPassword" placeholder="أدخل كلمة المرور"></div>
         <div class="login-buttons">
-            <button id="submitLogin" class="firebase-btn btn-cloud"><i class="fas fa-sign-in-alt"></i> دخول</button>
-            <button id="registerBtn" class="firebase-btn btn-local"><i class="fas fa-user-plus"></i> تسجيل</button>
-            <button id="anonLogin" class="firebase-btn btn-sync"><i class="fas fa-user-secret"></i> دخول مجهول</button>
+            <button id="submitLogin" class="firebase-btn btn-cloud"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
+            <button id="registerBtn" class="firebase-btn btn-local"><i class="fas fa-user-plus"></i> حساب جديد</button>
+            <button id="anonLogin" class="firebase-btn btn-sync"><i class="fas fa-user-secret"></i> دخول كمجهول</button>
             <button id="cancelLogin" class="firebase-btn btn-login"><i class="fas fa-times"></i> إلغاء</button>
         </div>
         <div id="loginMessage" style="margin-top:10px; font-size:12px;"></div>
     </div>
 
-    <!-- التقويم -->
+    <!-- ===== التقويم ===== -->
     <div class="calendar-wrapper" id="calendarWrapper">
         <div class="calendar-header">
             <button class="calendar-nav-btn" id="prevMonth"><i class="fas fa-chevron-right"></i></button>
@@ -177,149 +180,149 @@
         <div style="text-align:center; margin-top:10px;"><button class="firebase-btn btn-login" onclick="document.getElementById('calendarWrapper').classList.remove('show')">إغلاق التقويم</button></div>
     </div>
 
-    <!-- القسم العلوي -->
+    <!-- ===== القسم العلوي ===== -->
     <div class="top-section" id="topSection">
-        <div class="control-group"><label for="teacherSelect">اختر المشرف:</label><select id="teacherSelect"><option value="" disabled selected>-- اختر مشرف --</option></select></div>
+        <div class="control-group"><label for="teacherSelect">اختر المشرف:</label><select id="teacherSelect"><option value="" disabled selected>-- اختر المشرف --</option></select></div>
         <div class="control-group">
             <label>إدارة المشرفين:</label>
             <div style="display:flex; gap:4px;">
                 <input type="text" id="newTeacherName" placeholder="اسم المشرف...">
-                <select id="newTeacherSubject"><option value="" disabled selected>الصلاحية</option><option value="مشرف مقصف">مشرف مقصف</option><option value="مساعد مشرف">مساعد مشرف</option></select>
+                <select id="newTeacherSubject"><option value="" disabled selected>الدور</option><option value="مشرف مطعم">مشرف مطعم</option><option value="مساعد مشرف">مساعد مشرف</option></select>
             </div>
         </div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:flex-end;">
             <button id="addTeacherBtn" class="btn-add-teacher">➕ إضافة مشرف</button>
-            <label for="importTeachersExcel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> استيراد مشرفين</label>
+            <label for="importTeachersExcel" id="importTeachersLabel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> تحميل مشرفين</label>
             <input type="file" id="importTeachersExcel" accept=".xlsx" style="display:none;">
             <button id="deleteTeacherBtn" class="btn-delete-teacher">🗑️ حذف</button>
             <button id="deleteAllTeachersBtn" class="btn-delete-teacher">💥 حذف الكل</button>
         </div>
         <div class="control-group" id="classSelectSection">
-            <label for="classSelect">اختر الصف:</label>
+            <label for="classSelect">اختر القسم (الفصل):</label>
             <div style="display:flex; gap:4px; align-items:center;">
-                <select id="classSelect" style="flex:1;"><option value="4B">4ب</option><option value="4D">4د</option><option value="5B">5ب</option><option value="5D">5د</option><option value="6B">6ب</option><option value="6D">6د</option><option value="7B">7ب</option><option value="7D">7د</option><option value="8B">8ب</option><option value="8D">8د</option><option value="9B">9ب</option><option value="9D">9د</option><option value="10B">10ب</option><option value="10D">10د</option><option value="11B">11ب</option><option value="11D">11د</option><option value="12B">12ب</option><option value="12D">12د</option></select>
-                <button id="addClassBtn" class="btn-add-teacher" style="background:#6366f1;">➕ إضافة صف</button>
+                <select id="classSelect" style="flex:1;"><option value="4B">رابع B</option><option value="4D">رابع D</option><option value="5B">خامس B</option><option value="5D">خامس D</option><option value="6B">سادس B</option><option value="6D">سادس D</option><option value="7B">سابع B</option><option value="7D">سابع D</option><option value="8B">ثامن B</option><option value="8D">ثامن D</option><option value="9B">تاسع B</option><option value="9D">تاسع D</option><option value="10B">عاشر B</option><option value="10D">عاشر D</option><option value="11B">حادي عشر B</option><option value="11D">حادي عشر D</option><option value="12B">ثاني عشر B</option><option value="12D">ثاني عشر D</option></select>
+                <button id="addClassBtn" class="btn-add-teacher" style="background:#6366f1;">➕ إضافة قسم</button>
                 <button id="deleteClassBtn" class="btn-delete-teacher">🗑️ حذف</button>
             </div>
         </div>
     </div>
 
-    <!-- بطاقة المشرف -->
+    <!-- ===== بطاقة المشرف ===== -->
     <div id="teacherCardContainer"></div>
 
-    <!-- لوحة الإحصائيات -->
+    <!-- ===== لوحة الإحصائيات ===== -->
     <div class="stats-dashboard" id="statsDashboard">
-        <div class="stat-item green"><div class="value" id="statNow">0</div><div class="label">🟢 الطلاب في المقصف الآن</div></div>
+        <div class="stat-item green"><div class="value" id="statNow">0</div><div class="label">🟢 الطلاب في المطعم الآن</div></div>
         <div class="stat-item green"><div class="value" id="statCommitted">0</div><div class="label">✅ ملتزمون</div></div>
-        <div class="stat-item yellow"><div class="value" id="statWarnings">0</div><div class="label">⚠️ تحذيرات</div></div>
+        <div class="stat-item yellow"><div class="value" id="statWarnings">0</div><div class="label">⚠️ تنبيهات</div></div>
         <div class="stat-item red"><div class="value" id="statViolations">0</div><div class="label">🚫 مخالفات</div></div>
-        <div class="stat-item red"><div class="value" id="statFights">0</div><div class="label">🥊 مشاجرات</div></div>
+        <div class="stat-item red"><div class="value" id="statFights">0</div><div class="label">🥊 تشاجر</div></div>
         <div class="stat-item red"><div class="value" id="statBullying">0</div><div class="label">🚫 تنمر</div></div>
-        <div class="stat-item blue"><div class="value" id="statBestClass">-</div><div class="label">🏆 أفضل صف</div></div>
-        <div class="stat-item red"><div class="value" id="statWorstClass">-</div><div class="label">⚠️ أسوأ صف</div></div>
+        <div class="stat-item blue"><div class="value" id="statBestClass">-</div><div class="label">🏆 أفضل فصل</div></div>
+        <div class="stat-item red"><div class="value" id="statWorstClass">-</div><div class="label">⚠️ أكثر فصل مخالفات</div></div>
     </div>
 
-    <!-- العنوان -->
+    <!-- ===== عنوان اللوحة ===== -->
     <h2>
         <button class="calendar-toggle-btn" id="toggleCalendarBtn" title="فتح التقويم"><i class="far fa-calendar-alt"></i></button>
-        <span id="boardTitleText">🍽️ لوحة مراقبة المقصف</span>
+        <span id="boardTitleText">🍽️ لوحة إشراف المطعم</span>
         <span id="currentDateDisplay" class="current-date-display"></span>
-        <button id="showYearReportBtn" class="year-report-btn"><i class="fas fa-file-excel"></i> تقرير كامل</button>
-        <button id="resetAllCountersBtn" class="reset-all-btn"><i class="fas fa-undo-alt"></i> إعادة اليوم</button>
+        <button id="showYearReportBtn" class="year-report-btn"><i class="fas fa-file-excel"></i> تقرير شامل</button>
+        <button id="resetAllCountersBtn" class="reset-all-btn"><i class="fas fa-undo-alt"></i> تصفير اليوم</button>
     </h2>
 
-    <!-- أدوات التحكم -->
+    <!-- ===== أزرار التحكم ===== -->
     <div id="controls">
         <input type="text" id="newStudentName" placeholder="أضف طالباً يدوياً...">
         <button id="addStudentBtn" class="btn-add-student">➕ إضافة طالب</button>
-        <label for="importExcel" id="importExcelLabel">📥 استيراد من إكسل</label>
+        <label for="importExcel" id="importExcelLabel">📥 تحميل أسماء من Excel</label>
         <input type="file" id="importExcel" accept=".xlsx" style="display:none;">
-        <button id="exportExcel">📤 تصدير إكسل</button>
-        <input type="text" id="classTitle" placeholder="عنوان الصف...">
+        <button id="exportExcel">📤 تصدير Excel</button>
+        <input type="text" id="classTitle" placeholder="عنوان القسم...">
     </div>
 
-    <!-- بطاقات الطلاب -->
+    <!-- ===== بطاقات الطلاب ===== -->
     <div id="students"></div>
 
-    <!-- الجدول التفصيلي -->
+    <!-- ===== الجدول التفصيلي ===== -->
     <div class="table-container">
         <table id="report">
             <thead>
                 <tr>
-                    <th data-key="name">الاسم</th>
-                    <th data-key="rating">⭐ التقييم</th>
-                    <th data-key="entry">⏱️ دخول</th>
-                    <th data-key="exit">⏱️ خروج</th>
-                    <th data-key="status">الحالة</th>
-                    <th data-key="positives">✅ إيجابيات</th>
-                    <th data-key="violations">🚫 مخالفات</th>
-                    <th data-key="clean">النظافة</th>
-                    <th data-key="respect">الاحترام</th>
-                    <th data-key="cooperate">التعاون</th>
-                    <th data-key="fight">مشاجرة</th>
-                    <th data-key="bullying">تنمر</th>
-                    <th data-key="noise">ضوضاء</th>
-                    <th data-key="litter">إلقاء نفايات</th>
-                    <th data-key="property">إتلاف ممتلكات</th>
-                    <th data-key="commitment">نسبة الالتزام</th>
-                    <th data-key="notes">ملاحظات</th>
+                    <th>الاسم</th>
+                    <th>⭐ التقييم</th>
+                    <th>⏱️ دخول</th>
+                    <th>⏱️ خروج</th>
+                    <th>الحالة</th>
+                    <th>✅ إيجابيات</th>
+                    <th>🚫 مخالفات</th>
+                    <th>نظافة</th>
+                    <th>احترام</th>
+                    <th>تعاون</th>
+                    <th>تشاجر</th>
+                    <th>تنمر</th>
+                    <th>إزعاج</th>
+                    <th>رمي نفايات</th>
+                    <th>عبث بممتلكات</th>
+                    <th>نسبة الالتزام</th>
+                    <th>ملاحظات</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
-    <!-- الرسوم البيانية -->
+    <!-- ===== المخططات ===== -->
     <div id="adminChartsSection">
-        <h3><i class="fa-solid fa-chart-line"></i> تحليل المخالفات والإيجابيات</h3>
+        <h3><i class="fa-solid fa-chart-line"></i> تحليلات المخالفات والإيجابيات</h3>
         <div class="charts-grid">
             <div class="chart-card"><h4>📊 المخالفات حسب النوع</h4><div class="chart-wrapper"><canvas id="violationChart"></canvas></div></div>
             <div class="chart-card"><h4>📈 الإيجابيات حسب النوع</h4><div class="chart-wrapper"><canvas id="positiveChart"></canvas></div></div>
         </div>
     </div>
 
-    <!-- حاوية البيانات -->
+    <!-- ===== حاوية عرض البيانات ===== -->
     <div id="adminDataContainer"></div>
 
-    <!-- تذييل -->
-    <div class="copyright-footer"><p>🍽️ نظام مراقبة مقصف المدرسة - © 2026 محمد رضا عوف</p></div>
+    <!-- ===== تذييل ===== -->
+    <div class="copyright-footer"><p>🍽️ نظام الإشراف على المطعم المدرسي - حقوق الملكية © 2026 محمد رضا عوف</p></div>
     <div id="trophyPopup">🏆</div>
 
-    <!-- نافذة تعديل -->
+    <!-- ===== مودال تعديل الطالب ===== -->
     <div id="editModal" class="modal-overlay">
         <div class="modal-content">
             <h3>تعديل بيانات الطالب</h3>
             <div class="modal-field"><label>الاسم:</label><span id="editStudentNameDisplay" style="font-weight:bold;"></span></div>
-            <div class="modal-field"><label>الحالة (0=ملتزم،1=متابعة):</label><input type="number" id="editState" min="0" max="1"></div>
+            <div class="modal-field"><label>الحالة (0=ملتزم,1=متابعة):</label><input type="number" id="editState" min="0" max="1"></div>
             <div class="modal-field"><label>وقت الدخول:</label><input type="time" id="editEntryTime"></div>
             <div class="modal-field"><label>وقت الخروج:</label><input type="time" id="editExitTime"></div>
-            <div class="modal-field"><label>النظافة:</label><input type="number" id="editClean" min="0"></div>
-            <div class="modal-field"><label>الاحترام:</label><input type="number" id="editRespect" min="0"></div>
-            <div class="modal-field"><label>التعاون:</label><input type="number" id="editCooperate" min="0"></div>
-            <div class="modal-field"><label>مشاجرة:</label><input type="number" id="editFight" min="0"></div>
+            <div class="modal-field"><label>نظافة:</label><input type="number" id="editClean" min="0"></div>
+            <div class="modal-field"><label>احترام:</label><input type="number" id="editRespect" min="0"></div>
+            <div class="modal-field"><label>تعاون:</label><input type="number" id="editCooperate" min="0"></div>
+            <div class="modal-field"><label>تشاجر:</label><input type="number" id="editFight" min="0"></div>
             <div class="modal-field"><label>تنمر:</label><input type="number" id="editBullying" min="0"></div>
-            <div class="modal-field"><label>ضوضاء:</label><input type="number" id="editNoise" min="0"></div>
-            <div class="modal-field"><label>إلقاء نفايات:</label><input type="number" id="editLitter" min="0"></div>
-            <div class="modal-field"><label>إتلاف ممتلكات:</label><input type="number" id="editProperty" min="0"></div>
+            <div class="modal-field"><label>إزعاج:</label><input type="number" id="editNoise" min="0"></div>
+            <div class="modal-field"><label>رمي نفايات:</label><input type="number" id="editLitter" min="0"></div>
+            <div class="modal-field"><label>عبث بممتلكات:</label><input type="number" id="editProperty" min="0"></div>
             <div class="modal-field"><label>ملاحظات:</label><input type="text" id="editNote"></div>
             <div class="modal-buttons"><button class="modal-save" id="editModalSave">💾 حفظ</button><button class="modal-cancel" id="editModalCancel">❌ إلغاء</button></div>
         </div>
     </div>
 
-    <!-- نافذة عرض المدير -->
+    <!-- ===== مودال عرض الكل (مشرف) ===== -->
     <div id="adminViewModal" class="admin-modal-overlay">
         <div class="admin-modal-content" style="max-width:95%; width:1400px;">
-            <h3><i class="fas fa-eye"></i> جميع البيانات (مدير)</h3>
+            <h3><i class="fas fa-eye"></i> عرض جميع البيانات (مشرف)</h3>
             <div class="admin-filters" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; background:#f3f4f6; padding:10px; border-radius:8px;">
                 <label>المشرف:</label><select id="adminTeacherFilter"><option value="all">الكل</option></select>
-                <label>الصف:</label><select id="adminClassFilter"><option value="all">الكل</option></select>
+                <label>القسم:</label><select id="adminClassFilter"><option value="all">الكل</option></select>
                 <label>التاريخ:</label><input type="date" id="adminDateFilter">
                 <button id="adminApplyFilterBtn" class="btn-admin" style="background:#0b6e4f;color:white;border:none;padding:6px 14px;border-radius:6px;">تطبيق</button>
                 <button id="adminResetFilterBtn" class="btn-admin" style="background:#9ca3af;color:white;border:none;padding:6px 14px;border-radius:6px;">إعادة ضبط</button>
             </div>
             <div class="admin-table-container" style="overflow-x:auto; max-height:60vh; border:1px solid #ddd; border-radius:6px;">
                 <table id="adminViewTable">
-                    <thead><tr><th>المشرف</th><th>الصف</th><th>التاريخ</th><th>الطالب</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>النظافة</th><th>الاحترام</th><th>التعاون</th><th>مشاجرة</th><th>تنمر</th><th>ضوضاء</th><th>نفايات</th><th>إتلاف</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
+                    <thead><tr><th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -330,7 +333,7 @@
     </div>
 
     <script>
-        // ===== إعدادات Firebase (بدون تغيير) =====
+        // ===== إعدادات Firebase =====
         var firebaseConfig = {
             apiKey: "AIzaSyCTQUJV6erfDYbjId7xpuRDPwTmaGGk4e4",
             authDomain: "mohamedreda-718c9.firebaseapp.com",
@@ -341,20 +344,20 @@
             measurementId: "G-9QP9FDF9MR"
         };
         var firebaseApp, firebaseAuth, firebaseDb, isFirebaseInitialized = false;
-        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("Firebase init error", e); }
+        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("خطأ في تهيئة Firebase", e); }
 
         document.addEventListener("DOMContentLoaded", function() {
-            // ===== بيانات افتراضية بالعربية =====
+            // ===== البيانات الافتراضية =====
             var defaultSupervisors = [
-                { id: 's1', name: "أحمد الناصر", subject: "مشرف مقصف", icon: "fa-user-tie" },
+                { id: 's1', name: "أحمد الناصر", subject: "مشرف مطعم", icon: "fa-user-tie" },
                 { id: 's2', name: "خالد السعيد", subject: "مساعد مشرف", icon: "fa-user-tie" }
             ];
-            var defaultClasses = ['4ب','4د','5ب','5د','6ب','6د','7ب','7د','8ب','8د','9ب','9د','10ب','10د','11ب','11د','12ب','12د'];
+            var defaultClasses = ['4B','4D','5B','5D','6B','6D','7B','7D','8B','8D','9B','9D','10B','10D','11B','11D','12B','12D'];
             var CLASSES_STORAGE_KEY = 'classes_list';
 
             var supervisorsList = JSON.parse(localStorage.getItem('supervisors_list')) || defaultSupervisors;
             var classesList = JSON.parse(localStorage.getItem(CLASSES_STORAGE_KEY)) || defaultClasses;
-            var currentLang = 'ar'; // لغة عربية
+            var currentLang = 'ar'; // ثابت عربي
             var currentSupervisorId = null;
             var currentClass = null;
             var storageMode = localStorage.getItem('storage_mode') || 'local';
@@ -363,11 +366,12 @@
             var studentNames = [];
             var calendarDate = new Date();
             var selectedDate = new Date();
-            var data = {};
-            var allHistoryData = {};
+            var data = {};               // بيانات اليوم الحالي
+            var allHistoryData = {};     // { dateKey: { studentName: { ... } } }
             var selectedStudent = null;
+            var firebaseListenerRef = null; // مرجع الاستماع للتحديثات
 
-            // ===== العناصر DOM =====
+            // ===== عناصر DOM =====
             var teacherSelect = document.getElementById("teacherSelect");
             var classSelect = document.getElementById("classSelect");
             var teacherCardContainer = document.getElementById("teacherCardContainer");
@@ -414,6 +418,7 @@
             var viewAllDataBtn = document.getElementById("viewAllDataBtn");
             var importExcel = document.getElementById("importExcel");
             var exportExcel = document.getElementById("exportExcel");
+            var importTeachersLabel = document.getElementById("importTeachersLabel");
 
             var editModal = document.getElementById('editModal');
             var editStudentNameDisplay = document.getElementById('editStudentNameDisplay');
@@ -432,35 +437,39 @@
             var editModalSave = document.getElementById('editModalSave');
             var editModalCancel = document.getElementById('editModalCancel');
 
-            // ===== النصوص العربية =====
-            var T = {
-                boardTitle: "🍽️ لوحة مراقبة المقصف",
-                deleteSupervisor: "🗑️ حذف المشرف",
-                deleteStudent: "🗑️ حذف الطالب",
-                deleteAll: "💥 حذف الكل",
-                importLabel: "<i class='fas fa-file-excel'></i> استيراد مشرفين",
-                confirmDeleteSupervisor: "هل أنت متأكد من حذف هذا المشرف؟",
-                confirmDeleteStudent: function(n){ return 'هل أنت متأكد من حذف الطالب: ' + n + '؟'; },
-                confirmDeleteAll: "هل أنت متأكد من حذف جميع المشرفين؟",
-                errorSelectSupervisor: "الرجاء اختيار مشرف أولاً",
-                errorSelectClass: "الرجاء اختيار صف أولاً",
-                studentAdded: "تم إضافة الطالب بنجاح",
-                supervisorDeleted: "تم حذف المشرف بنجاح",
-                studentDeleted: "تم حذف الطالب بنجاح",
-                allDeleted: "تم حذف جميع المشرفين بنجاح",
-                newSupervisorPlaceholder: "اسم المشرف...",
-                newStudentPlaceholder: "أضف طالباً يدوياً...",
-                resetConfirm: "هل تريد إعادة ضبط جميع العدادات لليوم؟",
-                resetSuccess: "تم إعادة ضبط بيانات اليوم",
-                entry: "دخول",
-                exit: "خروج",
-                committed: "ملتزم",
-                needsFollow: "بحاجة متابعة",
-                positiveLabels: { clean:"النظافة", respect:"الاحترام", cooperate:"التعاون" },
-                violationLabels: { fight:"مشاجرة", bullying:"تنمر", noise:"ضوضاء", litter:"نفايات", property:"إتلاف" },
-                firebase: { online:"متصل بالسحابة", offline:"التخزين المحلي", syncSuccess:"تمت المزامنة بنجاح", syncError:"خطأ في المزامنة", loginSuccess:"تم الدخول", logoutSuccess:"تم الخروج", registerSuccess:"تم التسجيل", authError:"خطأ في المصادقة" },
-                calendar: { days:["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"], months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"] }
+            // ===== قاموس الترجمة (عربي كامل) =====
+            var translations = {
+                ar: {
+                    boardTitle: "🍽️ لوحة إشراف المطعم",
+                    deleteSupervisor: "حذف المشرف 🗑️",
+                    deleteStudent: "حذف الطالب 🗑️",
+                    deleteAll: "💥 حذف الكل",
+                    importLabel: "<i class='fas fa-file-excel'></i> تحميل مشرفين",
+                    confirmDeleteSupervisor: "هل أنت متأكد من حذف المشرف الحالي؟",
+                    confirmDeleteStudent: function(n){ return 'هل أنت متأكد من حذف الطالب: '+n+'؟'; },
+                    confirmDeleteAll: "هل أنت متأكد من حذف جميع المشرفين؟",
+                    errorSelectSupervisor: "الرجاء اختيار مشرف أولاً",
+                    errorSelectClass: "الرجاء اختيار القسم أولاً",
+                    studentAdded: "تمت إضافة الطالب",
+                    supervisorDeleted: "تم حذف المشرف",
+                    studentDeleted: "تم حذف الطالب",
+                    allDeleted: "تم حذف جميع المشرفين",
+                    newSupervisorPlaceholder: "اسم المشرف...",
+                    newStudentPlaceholder: "أضف طالباً...",
+                    resetConfirm: "هل تريد تصفير جميع عدادات اليوم؟",
+                    resetSuccess: "تم تصفير اليوم",
+                    entry: "دخول",
+                    exit: "خروج",
+                    committed: "ملتزم",
+                    needsFollow: "يحتاج متابعة",
+                    positiveLabels: { clean:"نظافة", respect:"احترام", cooperate:"تعاون" },
+                    violationLabels: { fight:"تشاجر", bullying:"تنمر", noise:"إزعاج", litter:"رمي نفايات", property:"عبث بممتلكات" },
+                    firebase: { online:"متصل بالسحابة", offline:"تخزين محلي", syncSuccess:"تمت المزامنة", syncError:"خطأ في المزامنة", loginSuccess:"تم الدخول", logoutSuccess:"تم الخروج", registerSuccess:"تم التسجيل", authError:"خطأ" },
+                    calendar: { days:["أحد","إثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"], months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"] }
+                }
             };
+
+            function T() { return translations['ar']; }
 
             // ===== دوال مساعدة =====
             function formattedSelectedDate() {
@@ -471,117 +480,118 @@
             }
             function STORAGE_KEY_DATA() { return 'cafeteria_data_' + currentSupervisorId + '_' + currentClass; }
             function STORAGE_KEY_ORIGINAL_NAMES() { return 'cafeteria_names_' + currentSupervisorId + '_' + currentClass; }
-            function FIREBASE_PATH() {
-                if(!currentUser) return null;
-                return 'users/'+currentUser.uid+'/supervisors/'+currentSupervisorId+'/classes/'+currentClass;
-            }
+
+            // ===== تعريف showMessage في الأعلى =====
             function showMessage(msg, type) {
-                type=type||'info';
-                var div=document.createElement('div');
-                div.textContent=msg;
-                div.style.cssText='position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:white; font-weight:bold; z-index:10000; box-shadow:0 3px 10px rgba(0,0,0,0.2); max-width:400px;';
-                if(type==='success') div.style.background='#34a853';
-                else if(type==='error') div.style.background='#ea4335';
-                else div.style.background='#4285f4';
+                type = type || 'info';
+                var div = document.createElement('div');
+                div.textContent = msg;
+                div.style.cssText = 'position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:white; font-weight:bold; z-index:10000; box-shadow:0 3px 10px rgba(0,0,0,0.2); max-width:400px;';
+                if (type === 'success') div.style.background = '#34a853';
+                else if (type === 'error') div.style.background = '#ea4335';
+                else div.style.background = '#4285f4';
                 document.body.appendChild(div);
-                setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); }, 4000);
+                setTimeout(function() { if (div.parentNode) div.parentNode.removeChild(div); }, 4000);
             }
 
-            function isAdminUser() {
-                if(!currentUser) return false;
-                var adminEmails = ['a7112119@gmail.com', 'a7112119@gmail.com'];
-                return adminEmails.includes(currentUser.email);
+            // ===== الدوال المعدلة حسب الطلب =====
+            // 1. تغيير دالة FIREBASE_PATH
+            function FIREBASE_PATH() {
+                // المسار العام بدون uid
+                return 'supervisors/' + currentSupervisorId + '/classes/' + currentClass;
             }
 
-            function applyRoleVisibility() {
-                var isAdmin = isAdminUser();
-                var teacherElements = [document.getElementById('teacherCardContainer'), document.getElementById('students'), document.getElementById('controls'), document.getElementById('report')];
-                var classSection = document.getElementById('classSelectSection');
-                var chartsSection = document.getElementById('adminChartsSection');
-                if(isAdmin) {
-                    teacherElements.forEach(el=>{ if(el) el.style.display='none'; });
-                    if(classSection) classSection.style.display='none';
-                    if(chartsSection) chartsSection.style.display='block';
-                    document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('show'));
-                    setTimeout(renderAdminCharts, 300);
-                } else {
-                    teacherElements.forEach(el=>{ if(el) el.style.display=''; });
-                    if(classSection) classSection.style.display='';
-                    if(chartsSection) chartsSection.style.display='none';
-                    document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
+            // 2. تغيير دالة saveToFirebase
+            async function saveToFirebase() {
+                if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return;
+                var path = FIREBASE_PATH();
+                if (!path) return;
+                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
+                var saveData = {
+                    datesData: allHistoryData,
+                    originalStudentNames: originalStudentNames,
+                    supervisorName: sup ? sup.name : '',
+                    supervisorRole: sup ? sup.subject : '',
+                    lastUpdated: new Date().toISOString()
+                };
+                try {
+                    await firebaseDb.ref(path).set(saveData);
+                    return true;
+                } catch (e) {
+                    console.error(e);
+                    showMessage(T().firebase.syncError, 'error');
+                    return false;
                 }
             }
 
-            // ===== الصفوف =====
-            function saveClassesList() { localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(classesList)); }
-            function updateClassSelect() {
-                var sel = document.getElementById('classSelect');
-                var cur = sel.value;
-                sel.innerHTML = '';
-                classesList.forEach(c=>{ var opt=document.createElement('option'); opt.value=c; opt.textContent=c; sel.appendChild(opt); });
-                if(classesList.includes(cur)) sel.value=cur;
-                else if(classesList.length) sel.value=classesList[0];
-                if(currentClass && !classesList.includes(currentClass)) currentClass = null;
-            }
-            function addNewClass() {
-                var newC = prompt('📚 أدخل اسم الصف الجديد:');
-                if(!newC) return;
-                newC = newC.trim();
-                if(!newC || classesList.includes(newC)) { showMessage('⚠️ اسم مكرر أو غير صالح','error'); return; }
-                classesList.push(newC);
-                saveClassesList();
-                updateClassSelect();
-                document.getElementById('classSelect').value = newC;
-                currentClass = newC;
-                showMessage('✅ تم إضافة الصف '+newC,'success');
-                if(currentSupervisorId) loadData();
-            }
-            function deleteCurrentClass() {
-                var cls = document.getElementById('classSelect').value;
-                if(!cls) return;
-                if(classesList.length<=1) { showMessage('❌ لا يمكن حذف الصف الأخير','error'); return; }
-                if(!confirm('🗑️ حذف الصف '+cls+'؟')) return;
-                classesList = classesList.filter(c=>c!==cls);
-                saveClassesList();
-                updateClassSelect();
-                if(currentClass===cls) currentClass = classesList[0]||null;
-                if(currentSupervisorId && currentClass) loadData();
-                else { initStudentsUI(); updateTable(); }
-            }
-
-            // ===== المشرفون =====
-            function saveSupervisorsList() { localStorage.setItem('supervisors_list', JSON.stringify(supervisorsList)); }
-            function initSupervisorSelect() {
-                teacherSelect.innerHTML = '<option value="" disabled selected>-- اختر مشرف --</option>';
-                supervisorsList.forEach(s=>{
-                    var opt=document.createElement('option');
-                    opt.value=s.id;
-                    opt.textContent=s.name+' - '+s.subject;
-                    teacherSelect.appendChild(opt);
+            // 3. دالة الاستماع للتحديثات
+            function listenToFirebase() {
+                if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return;
+                var path = FIREBASE_PATH();
+                if (!path) return;
+                if (firebaseListenerRef) {
+                    firebaseListenerRef.off();
+                    firebaseListenerRef = null;
+                }
+                var ref = firebaseDb.ref(path);
+                firebaseListenerRef = ref;
+                ref.on('value', function(snapshot) {
+                    var fbData = snapshot.val();
+                    if (fbData) {
+                        if (fbData.datesData) { allHistoryData = fbData.datesData; localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData)); }
+                        if (fbData.originalStudentNames) { originalStudentNames = fbData.originalStudentNames; localStorage.setItem(STORAGE_KEY_ORIGINAL_NAMES(), JSON.stringify(originalStudentNames)); }
+                        if (fbData.supervisorName) boardTitleEl.textContent = T().boardTitle + ' - ' + fbData.supervisorName;
+                        ensureAllStudentsInData();
+                        refreshUI();
+                        showMessage('تم تحديث البيانات من السحابة فوراً', 'success');
+                    }
+                }, function(error) {
+                    console.error('Firebase listen error:', error);
                 });
             }
-            function selectSupervisor(id) {
-                currentSupervisorId = id;
-                var sup = supervisorsList.find(s=>s.id===id);
-                if(!sup) return;
-                var icon = sup.icon || 'fa-user-tie';
-                teacherCardContainer.innerHTML = '<div class="teacher-card"><div class="teacher-icon"><i class="fa-solid '+icon+'"></i></div><div class="teacher-info"><h3>'+sup.name+'</h3><p>الصلاحية: '+sup.subject+'</p></div></div>';
-                if(currentClass) loadData();
+
+            // 4. تغيير دالة loadFromFirebase
+            async function loadFromFirebase() {
+                if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return false;
+                var path = FIREBASE_PATH();
+                if (!path) return false;
+                try {
+                    var snap = await firebaseDb.ref(path).once('value');
+                    var fbData = snap.val();
+                    if (fbData) {
+                        if (fbData.datesData) { allHistoryData = fbData.datesData; localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData)); }
+                        if (fbData.originalStudentNames) { originalStudentNames = fbData.originalStudentNames; localStorage.setItem(STORAGE_KEY_ORIGINAL_NAMES(), JSON.stringify(originalStudentNames)); }
+                        if (fbData.supervisorName) boardTitleEl.textContent = T().boardTitle + ' - ' + fbData.supervisorName;
+                        loadDataFromLocalStorage();
+                        return true;
+                    }
+                    return false;
+                } catch (e) { console.error(e); return false; }
             }
 
-            // ===== البيانات =====
+            // دالة تحديث الواجهة (refreshUI)
+            function refreshUI() {
+                updateDisplayNames();
+                ensureAllStudentsInData();
+                initStudentsUI();
+                updateTable();
+                updateStats();
+                updateDateDisplay();
+            }
+
+            // ===== دوال البيانات =====
             function ensureAllStudentsInData() {
                 var dateKey = formattedSelectedDate();
-                if(!allHistoryData[dateKey]) allHistoryData[dateKey] = {};
+                if (!allHistoryData[dateKey]) allHistoryData[dateKey] = {};
                 data = allHistoryData[dateKey];
-                originalStudentNames.forEach(name=>{
-                    if(!data[name]) {
+                originalStudentNames.forEach(name => {
+                    if (!data[name]) {
                         data[name] = {
                             state: 0,
                             entryTime: '',
                             exitTime: '',
-                            positive: { clean:0, respect:0, cooperate:0 },
-                            violations: { fight:0, bullying:0, noise:0, litter:0, property:0 },
+                            positive: { clean: 0, respect: 0, cooperate: 0 },
+                            violations: { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 },
                             note: ''
                         };
                     }
@@ -596,114 +606,86 @@
             }
 
             async function saveAll(showMsg) {
-                if(!currentSupervisorId || !currentClass) return;
+                if (!currentSupervisorId || !currentClass) return;
                 var dateKey = formattedSelectedDate();
                 allHistoryData[dateKey] = data;
                 localStorage.setItem(STORAGE_KEY_ORIGINAL_NAMES(), JSON.stringify(originalStudentNames));
                 localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData));
-                if(storageMode==='cloud' && currentUser) await saveToFirebase();
+                if (storageMode === 'cloud' && currentUser) await saveToFirebase();
                 updateStats();
-            }
-
-            async function saveToFirebase() {
-                if(!isFirebaseInitialized || !currentUser || storageMode!=='cloud') return;
-                var path = FIREBASE_PATH();
-                if(!path) return;
-                var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
-                var saveData = {
-                    datesData: allHistoryData,
-                    originalStudentNames: originalStudentNames,
-                    supervisorName: sup?sup.name:'',
-                    supervisorRole: sup?sup.subject:'',
-                    lastUpdated: new Date().toISOString()
-                };
-                try { await firebaseDb.ref(path).set(saveData); return true; }
-                catch(e) { console.error(e); showMessage(T.firebase.syncError,'error'); return false; }
-            }
-
-            async function loadFromFirebase() {
-                if(!isFirebaseInitialized || !currentUser || storageMode!=='cloud') return false;
-                var path = FIREBASE_PATH();
-                if(!path) return false;
-                try {
-                    var snap = await firebaseDb.ref(path).once('value');
-                    var fbData = snap.val();
-                    if(fbData) {
-                        if(fbData.datesData) { allHistoryData = fbData.datesData; localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData)); }
-                        if(fbData.originalStudentNames) { originalStudentNames = fbData.originalStudentNames; localStorage.setItem(STORAGE_KEY_ORIGINAL_NAMES(), JSON.stringify(originalStudentNames)); }
-                        if(fbData.supervisorName) boardTitleEl.textContent = T.boardTitle + ' - ' + fbData.supervisorName;
-                        loadDataFromLocalStorage();
-                        return true;
-                    }
-                    return false;
-                } catch(e) { console.error(e); return false; }
             }
 
             async function loadData() {
-                if(!currentSupervisorId || !currentClass) return;
+                if (!currentSupervisorId || !currentClass) return;
                 var loaded = false;
-                if(storageMode==='cloud' && currentUser && isFirebaseInitialized) loaded = await loadFromFirebase();
-                if(!loaded) loadDataFromLocalStorage();
-                // الأسماء الأصلية بالفعل عربية، لا حاجة للتحويل
-                studentNames = originalStudentNames.slice(); // نسخ
-                ensureAllStudentsInData();
-                updateDateDisplay();
-                initStudentsUI();
-                updateTable();
-                updateStats();
+                if (storageMode === 'cloud' && currentUser && isFirebaseInitialized) {
+                    loaded = await loadFromFirebase();
+                    // بعد تحميل البيانات، نبدأ الاستماع للتحديثات
+                    listenToFirebase();
+                }
+                if (!loaded) loadDataFromLocalStorage();
+                refreshUI();
                 applyRoleVisibility();
+            }
+
+            function updateDisplayNames() {
+                studentNames = originalStudentNames.slice();
             }
 
             function updateDateDisplay() { currentDateDisplayEl.textContent = formattedSelectedDate(); }
 
-            // ===== التقويم =====
+            // ===== دوال التقويم =====
             function renderCalendar() {
                 calendarGrid.innerHTML = '';
-                var t = T.calendar;
-                t.days.forEach(d=>{ var h=document.createElement('div'); h.className='calendar-day-name'; h.textContent=d; calendarGrid.appendChild(h); });
-                var year=calendarDate.getFullYear(), month=calendarDate.getMonth();
+                var t = translations['ar'].calendar;
+                t.days.forEach(d => { var h = document.createElement('div'); h.className = 'calendar-day-name'; h.textContent = d; calendarGrid.appendChild(h); });
+                var year = calendarDate.getFullYear(),
+                    month = calendarDate.getMonth();
                 calendarTitle.textContent = t.months[month] + ' ' + year;
-                var firstDay = new Date(year,month,1).getDay();
-                var lastDay = new Date(year,month+1,0).getDate();
+                var firstDay = new Date(year, month, 1).getDay();
+                var lastDay = new Date(year, month + 1, 0).getDate();
                 var selStr = formattedSelectedDate();
-                for(var i=0;i<firstDay;i++){ var e=document.createElement('div'); e.className='day-cell empty'; calendarGrid.appendChild(e); }
-                for(var d=1; d<=lastDay; d++) {
-                    var cell=document.createElement('div');
-                    cell.className='day-cell';
-                    cell.textContent=d;
-                    var ds = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+                for (var i = 0; i < firstDay; i++) { var e = document.createElement('div');
+                    e.className = 'day-cell empty';
+                    calendarGrid.appendChild(e); }
+                for (var d = 1; d <= lastDay; d++) {
+                    var cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    cell.textContent = d;
+                    var ds = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
                     var now = new Date();
-                    var nowStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-                    if(ds===nowStr) cell.classList.add('today');
-                    if(ds===selStr) cell.classList.add('active');
-                    cell.addEventListener('click', (function(y,m,d){
-                        return function(){
-                            if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً أولاً','error'); return; }
+                    var nowStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                    if (ds === nowStr) cell.classList.add('today');
+                    if (ds === selStr) cell.classList.add('active');
+                    cell.addEventListener('click', (function(y, m, d) {
+                        return function() {
+                            if (!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً أولاً', 'error'); return; }
                             var oldKey = formattedSelectedDate();
                             allHistoryData[oldKey] = data;
-                            selectedDate = new Date(y,m,d);
+                            selectedDate = new Date(y, m, d);
                             var newKey = formattedSelectedDate();
-                            if(allHistoryData[newKey]) data = allHistoryData[newKey];
+                            if (allHistoryData[newKey]) data = allHistoryData[newKey];
                             else data = {};
                             ensureAllStudentsInData();
                             localStorage.setItem(STORAGE_KEY_DATA(), JSON.stringify(allHistoryData));
-                            initStudentsUI(); updateTable(); updateStats(); renderCalendar();
+                            refreshUI();
+                            renderCalendar();
                             calendarWrapper.classList.remove('show');
                             updateDateDisplay();
                         };
-                    })(year,month,d));
+                    })(year, month, d));
                     calendarGrid.appendChild(cell);
                 }
             }
 
-            // ===== واجهة الطلاب =====
+            // ===== دوال الطلاب والواجهة =====
             function initStudentsUI() {
                 studentsContainer.innerHTML = '';
-                studentNames.forEach(displayName=>{
+                studentNames.forEach(displayName => {
                     var idx = studentNames.indexOf(displayName);
-                    var originalName = (idx!==-1) ? originalStudentNames[idx] : displayName;
-                    if(!data[originalName]) {
-                        data[originalName] = { state:0, entryTime:'', exitTime:'', positive:{clean:0,respect:0,cooperate:0}, violations:{fight:0,bullying:0,noise:0,litter:0,property:0}, note:'' };
+                    var originalName = (idx !== -1) ? originalStudentNames[idx] : displayName;
+                    if (!data[originalName]) {
+                        data[originalName] = { state: 0, entryTime: '', exitTime: '', positive: { clean: 0, respect: 0, cooperate: 0 }, violations: { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 }, note: '' };
                     }
                     studentsContainer.appendChild(createStudentElement(displayName));
                 });
@@ -716,15 +698,15 @@
                 el.className = 'student';
                 el.dataset.name = displayName;
                 var idx = studentNames.indexOf(displayName);
-                var originalName = (idx!==-1) ? originalStudentNames[idx] : displayName;
+                var originalName = (idx !== -1) ? originalStudentNames[idx] : displayName;
                 var sData = data[originalName] || {};
                 var state = sData.state || 0;
-                var stateText = state===0 ? T.committed : T.needsFollow;
-                var stateColor = state===0 ? '#0b6e4f' : '#ea4335';
+                var stateText = state === 0 ? T().committed : T().needsFollow;
+                var stateColor = state === 0 ? '#0b6e4f' : '#ea4335';
                 el.style.background = stateColor;
-                var entryDisplay = sData.entryTime ? '🟢 '+sData.entryTime : '';
-                var exitDisplay = sData.exitTime ? '🔴 '+sData.exitTime : '';
-                el.innerHTML = displayName + (entryDisplay ? '<br><span class="time-badge">'+entryDisplay+'</span>' : '') + (exitDisplay ? '<br><span class="time-badge">'+exitDisplay+'</span>' : '');
+                var entryDisplay = sData.entryTime ? '🟢 ' + sData.entryTime : '';
+                var exitDisplay = sData.exitTime ? '🔴 ' + sData.exitTime : '';
+                el.innerHTML = displayName + (entryDisplay ? '<br><span class="time-badge">' + entryDisplay + '</span>' : '') + (exitDisplay ? '<br><span class="time-badge">' + exitDisplay + '</span>' : '');
                 el.title = stateText;
 
                 var quickControls = document.createElement('div');
@@ -734,37 +716,37 @@
                 btnEntry.className = 'btn-entry';
                 btnEntry.textContent = '🟢 دخول';
                 btnEntry.title = 'تسجيل دخول';
-                btnEntry.onclick = (function(dn){ return async function(e){ e.stopPropagation(); await recordEntry(dn); }; })(displayName);
+                btnEntry.onclick = (function(dn) { return async function(e) { e.stopPropagation(); await recordEntry(dn); }; })(displayName);
                 quickControls.appendChild(btnEntry);
 
                 var btnExit = document.createElement('button');
                 btnExit.className = 'btn-exit';
                 btnExit.textContent = '🔴 خروج';
                 btnExit.title = 'تسجيل خروج';
-                btnExit.onclick = (function(dn){ return async function(e){ e.stopPropagation(); await recordExit(dn); }; })(displayName);
+                btnExit.onclick = (function(dn) { return async function(e) { e.stopPropagation(); await recordExit(dn); }; })(displayName);
                 quickControls.appendChild(btnExit);
 
-                var positives = ['clean','respect','cooperate'];
-                var posLabels = T.positiveLabels;
-                var posIcons = { clean:'🧹', respect:'🤝', cooperate:'😊' };
-                positives.forEach(p=>{
+                var positives = ['clean', 'respect', 'cooperate'];
+                var posLabels = T().positiveLabels;
+                positives.forEach(p => {
                     var btn = document.createElement('button');
                     btn.className = 'btn-positive';
-                    btn.textContent = posIcons[p] + ' ' + posLabels[p];
-                    btn.title = 'إضافة '+posLabels[p];
-                    btn.onclick = (function(dn, key){ return async function(e){ e.stopPropagation(); await addPositive(dn, key); }; })(displayName, p);
+                    var iconMap = { clean: '🧹', respect: '🤝', cooperate: '😊' };
+                    btn.textContent = iconMap[p] + ' ' + posLabels[p];
+                    btn.title = 'إضافة ' + posLabels[p];
+                    btn.onclick = (function(dn, key) { return async function(e) { e.stopPropagation(); await addPositive(dn, key); }; })(displayName, p);
                     quickControls.appendChild(btn);
                 });
 
-                var violations = ['fight','bullying','noise','litter','property'];
-                var vioLabels = T.violationLabels;
-                var vioIcons = { fight:'🥊', bullying:'🚫', noise:'🔊', litter:'🗑️', property:'🪑' };
-                violations.forEach(v=>{
+                var violations = ['fight', 'bullying', 'noise', 'litter', 'property'];
+                var vioLabels = T().violationLabels;
+                var vioIcons = { fight: '🥊', bullying: '🚫', noise: '🔊', litter: '🗑️', property: '🪑' };
+                violations.forEach(v => {
                     var btn = document.createElement('button');
                     btn.className = 'btn-violation';
                     btn.textContent = vioIcons[v] + ' ' + vioLabels[v];
-                    btn.title = 'إضافة '+vioLabels[v];
-                    btn.onclick = (function(dn, key){ return async function(e){ e.stopPropagation(); await addViolation(dn, key); }; })(displayName, v);
+                    btn.title = 'إضافة ' + vioLabels[v];
+                    btn.onclick = (function(dn, key) { return async function(e) { e.stopPropagation(); await addViolation(dn, key); }; })(displayName, v);
                     quickControls.appendChild(btn);
                 });
 
@@ -772,14 +754,14 @@
                 btnEdit.textContent = '✏️';
                 btnEdit.className = 'btn-positive';
                 btnEdit.title = 'تعديل';
-                btnEdit.onclick = (function(dn){ return function(e){ e.stopPropagation(); openEditModal(dn); }; })(displayName);
+                btnEdit.onclick = (function(dn) { return function(e) { e.stopPropagation(); openEditModal(dn); }; })(displayName);
                 quickControls.appendChild(btnEdit);
 
                 var btnDel = document.createElement('button');
                 btnDel.textContent = '🗑️';
                 btnDel.className = 'btn-violation';
-                btnDel.title = T.deleteStudent;
-                btnDel.onclick = (function(dn){ return async function(e){ e.stopPropagation(); await deleteStudent(dn); }; })(displayName);
+                btnDel.title = T().deleteStudent;
+                btnDel.onclick = (function(dn) { return async function(e) { e.stopPropagation(); await deleteStudent(dn); }; })(displayName);
                 quickControls.appendChild(btnDel);
 
                 container.appendChild(el);
@@ -787,26 +769,26 @@
                 return container;
             }
 
-            // ===== الإجراءات =====
+            // ===== دوال الإجراءات =====
             async function recordEntry(displayName) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
                 var now = new Date();
-                var timeStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+                var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
                 data[originalName].entryTime = timeStr;
-                if(!data[originalName].exitTime) data[originalName].exitTime = '';
+                if (!data[originalName].exitTime) data[originalName].exitTime = '';
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
-                showMessage(displayName+' دخل الساعة '+timeStr,'success');
+                refreshUI();
+                showMessage(displayName + ' دخل الساعة ' + timeStr, 'success');
             }
 
             async function recordExit(displayName) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
                 var now = new Date();
-                var timeStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+                var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
                 data[originalName].exitTime = timeStr;
                 var pos = data[originalName].positive;
                 var vio = data[originalName].violations;
@@ -814,62 +796,64 @@
                 var totalVio = vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
                 data[originalName].state = (totalPos >= totalVio) ? 0 : 1;
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
-                showMessage(displayName+' خرج الساعة '+timeStr,'info');
+                refreshUI();
+                showMessage(displayName + ' خرج الساعة ' + timeStr, 'info');
             }
 
             async function addPositive(displayName, key) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
-                data[originalName].positive[key] = (data[originalName].positive[key]||0) + 1;
+                data[originalName].positive[key] = (data[originalName].positive[key] || 0) + 1;
                 await saveAll();
-                updateTable(); updateStats();
-                showMessage('✅ '+displayName+' +'+T.positiveLabels[key],'success');
+                updateTable();
+                updateStats();
+                showMessage('✅ ' + displayName + ' +' + T().positiveLabels[key], 'success');
             }
 
             async function addViolation(displayName, key) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
-                data[originalName].violations[key] = (data[originalName].violations[key]||0) + 1;
+                data[originalName].violations[key] = (data[originalName].violations[key] || 0) + 1;
                 var pos = data[originalName].positive;
                 var vio = data[originalName].violations;
                 var totalPos = pos.clean + pos.respect + pos.cooperate;
                 var totalVio = vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
-                if(totalVio > totalPos) data[originalName].state = 1;
+                if (totalVio > totalPos) data[originalName].state = 1;
                 await saveAll();
-                updateTable(); updateStats();
-                showMessage('🚫 '+displayName+' +'+T.violationLabels[key],'warning');
+                updateTable();
+                updateStats();
+                showMessage('🚫 ' + displayName + ' +' + T().violationLabels[key], 'warning');
             }
 
             async function deleteStudent(displayName) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
-                if(!confirm(T.confirmDeleteStudent(displayName))) return;
-                originalStudentNames.splice(idx,1);
-                studentNames.splice(idx,1);
-                Object.keys(allHistoryData).forEach(d=>{ delete allHistoryData[d][originalName]; });
+                if (!confirm(T().confirmDeleteStudent(displayName))) return;
+                originalStudentNames.splice(idx, 1);
+                studentNames.splice(idx, 1);
+                Object.keys(allHistoryData).forEach(d => { delete allHistoryData[d][originalName]; });
                 delete data[originalName];
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
-                showMessage(T.studentDeleted,'success');
+                refreshUI();
+                showMessage(T().studentDeleted, 'success');
             }
 
             async function resetToday() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
-                if(!confirm(T.resetConfirm)) return;
+                if (!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً', 'error'); return; }
+                if (!confirm(T().resetConfirm)) return;
                 var dateKey = formattedSelectedDate();
                 allHistoryData[dateKey] = {};
                 data = {};
-                originalStudentNames.forEach(name=>{
-                    data[name] = { state:0, entryTime:'', exitTime:'', positive:{clean:0,respect:0,cooperate:0}, violations:{fight:0,bullying:0,noise:0,litter:0,property:0}, note:'' };
+                originalStudentNames.forEach(name => {
+                    data[name] = { state: 0, entryTime: '', exitTime: '', positive: { clean: 0, respect: 0, cooperate: 0 }, violations: { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 }, note: '' };
                 });
                 allHistoryData[dateKey] = data;
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
-                showMessage(T.resetSuccess,'success');
+                refreshUI();
+                showMessage(T().resetSuccess, 'success');
             }
 
             // ===== الإحصائيات =====
@@ -882,18 +866,18 @@
                 var bullying = 0;
                 var classStats = {};
 
-                originalStudentNames.forEach(name=>{
+                originalStudentNames.forEach(name => {
                     var sd = data[name] || {};
-                    if(sd.entryTime && !sd.exitTime) nowStudents++;
-                    if(sd.state===0) committed++;
+                    if (sd.entryTime && !sd.exitTime) nowStudents++;
+                    if (sd.state === 0) committed++;
                     var vio = sd.violations || {};
-                    var totalV = vio.fight+vio.bullying+vio.noise+vio.litter+vio.property;
-                    if(totalV>0) violations += totalV;
-                    fights += vio.fight||0;
-                    bullying += vio.bullying||0;
-                    if(totalV>=3) warnings++;
+                    var totalV = vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
+                    if (totalV > 0) violations += totalV;
+                    fights += vio.fight || 0;
+                    bullying += vio.bullying || 0;
+                    if (totalV >= 3) warnings++;
                     var cls = currentClass || 'غير محدد';
-                    if(!classStats[cls]) classStats[cls] = { students:0, violations:0 };
+                    if (!classStats[cls]) classStats[cls] = { students: 0, violations: 0 };
                     classStats[cls].students++;
                     classStats[cls].violations += totalV;
                 });
@@ -905,12 +889,16 @@
                 document.getElementById('statFights').textContent = fights;
                 document.getElementById('statBullying').textContent = bullying;
 
-                var bestClass = '-', worstClass = '-';
-                var bestScore = -1, worstScore = Infinity;
-                Object.keys(classStats).forEach(c=>{
+                var bestClass = '-',
+                    worstClass = '-';
+                var bestScore = -1,
+                    worstScore = Infinity;
+                Object.keys(classStats).forEach(c => {
                     var ratio = classStats[c].violations / (classStats[c].students || 1);
-                    if(ratio < bestScore || bestScore===-1) { bestScore=ratio; bestClass=c; }
-                    if(ratio > worstScore) { worstScore=ratio; worstClass=c; }
+                    if (ratio < bestScore || bestScore === -1) { bestScore = ratio;
+                        bestClass = c; }
+                    if (ratio > worstScore) { worstScore = ratio;
+                        worstClass = c; }
                 });
                 document.getElementById('statBestClass').textContent = bestClass;
                 document.getElementById('statWorstClass').textContent = worstClass;
@@ -919,20 +907,21 @@
             // ===== الجدول =====
             function updateTable() {
                 tbody.innerHTML = '';
-                studentNames.forEach((displayName, idx)=>{
+                var t = T();
+                studentNames.forEach((displayName, idx) => {
                     var originalName = originalStudentNames[idx] || displayName;
                     var sd = data[originalName] || {};
-                    var pos = sd.positive || {clean:0,respect:0,cooperate:0};
-                    var vio = sd.violations || {fight:0,bullying:0,noise:0,litter:0,property:0};
-                    var totalPos = pos.clean+pos.respect+pos.cooperate;
-                    var totalVio = vio.fight+vio.bullying+vio.noise+vio.litter+vio.property;
-                    var commitment = totalPos+totalVio === 0 ? 100 : Math.round((totalPos / (totalPos+totalVio))*100);
-                    var status = sd.state===0 ? T.committed : T.needsFollow;
+                    var pos = sd.positive || { clean: 0, respect: 0, cooperate: 0 };
+                    var vio = sd.violations || { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 };
+                    var totalPos = pos.clean + pos.respect + pos.cooperate;
+                    var totalVio = vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
+                    var commitment = totalPos + totalVio === 0 ? 100 : Math.round((totalPos / (totalPos + totalVio)) * 100);
+                    var status = sd.state === 0 ? t.committed : t.needsFollow;
                     var tr = document.createElement('tr');
 
                     var cells = [
                         displayName,
-                        sd.state===0 ? '⭐ ملتزم' : '⚠️ يحتاج متابعة',
+                        sd.state === 0 ? '⭐ ملتزم' : '⚠️ متابعة',
                         sd.entryTime || '-',
                         sd.exitTime || '-',
                         status,
@@ -940,11 +929,11 @@
                         totalVio,
                         pos.clean, pos.respect, pos.cooperate,
                         vio.fight, vio.bullying, vio.noise, vio.litter, vio.property,
-                        commitment+'%',
+                        commitment + '%',
                         sd.note || ''
                     ];
-                    cells.forEach(val=>{
-                        var td=document.createElement('td');
+                    cells.forEach(val => {
+                        var td = document.createElement('td');
                         td.textContent = val;
                         tr.appendChild(td);
                     });
@@ -952,10 +941,10 @@
                 });
             }
 
-            // ===== نافذة التعديل =====
+            // ===== مودال التعديل =====
             function openEditModal(displayName) {
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
                 var sd = data[originalName] || {};
                 editStudentNameDisplay.textContent = displayName;
@@ -977,7 +966,7 @@
             editModalSave.addEventListener('click', async function() {
                 var displayName = editStudentNameDisplay.textContent;
                 var idx = studentNames.indexOf(displayName);
-                if(idx===-1) return;
+                if (idx === -1) return;
                 var originalName = originalStudentNames[idx] || displayName;
                 data[originalName].state = parseInt(editState.value) || 0;
                 data[originalName].entryTime = editEntryTime.value;
@@ -992,40 +981,40 @@
                 data[originalName].violations.property = parseInt(editProperty.value) || 0;
                 data[originalName].note = editNote.value;
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
+                refreshUI();
                 editModal.classList.remove('show');
-                showMessage('تم تحديث '+displayName,'success');
+                showMessage('تم تحديث ' + displayName, 'success');
             });
 
-            editModalCancel.addEventListener('click', function(){ editModal.classList.remove('show'); });
-            editModal.addEventListener('click', function(e){ if(e.target===editModal) editModal.classList.remove('show'); });
+            editModalCancel.addEventListener('click', function() { editModal.classList.remove('show'); });
+            editModal.addEventListener('click', function(e) { if (e.target === editModal) editModal.classList.remove('show'); });
 
-            // ===== وظائف المدير =====
+            // ===== دوال المشرف =====
             function renderAdminCharts() {
-                if(!isAdminUser()) return;
+                if (!isAdminUser()) return;
                 var results = getAllLocalStorageData();
-                if(results.length===0) {
+                if (results.length === 0) {
                     document.querySelector('#adminChartsSection .charts-grid').innerHTML = '<div style="text-align:center;padding:40px 0;color:#999;">لا توجد بيانات كافية</div>';
                     return;
                 }
-                var vioCounts = { fight:0, bullying:0, noise:0, litter:0, property:0 };
-                var posCounts = { clean:0, respect:0, cooperate:0 };
-                results.forEach(r=>{
-                    vioCounts.fight += r.fight||0;
-                    vioCounts.bullying += r.bullying||0;
-                    vioCounts.noise += r.noise||0;
-                    vioCounts.litter += r.litter||0;
-                    vioCounts.property += r.property||0;
-                    posCounts.clean += r.clean||0;
-                    posCounts.respect += r.respect||0;
-                    posCounts.cooperate += r.cooperate||0;
+                var vioCounts = { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 };
+                var posCounts = { clean: 0, respect: 0, cooperate: 0 };
+                results.forEach(r => {
+                    vioCounts.fight += r.fight || 0;
+                    vioCounts.bullying += r.bullying || 0;
+                    vioCounts.noise += r.noise || 0;
+                    vioCounts.litter += r.litter || 0;
+                    vioCounts.property += r.property || 0;
+                    posCounts.clean += r.clean || 0;
+                    posCounts.respect += r.respect || 0;
+                    posCounts.cooperate += r.cooperate || 0;
                 });
 
                 var ctxV = document.getElementById('violationChart').getContext('2d');
                 new Chart(ctxV, {
                     type: 'bar',
                     data: {
-                        labels: ['مشاجرة','تنمر','ضوضاء','نفايات','إتلاف'],
+                        labels: ['تشاجر', 'تنمر', 'إزعاج', 'رمي نفايات', 'عبث ممتلكات'],
                         datasets: [{ label: 'المخالفات', data: [vioCounts.fight, vioCounts.bullying, vioCounts.noise, vioCounts.litter, vioCounts.property], backgroundColor: 'rgba(239,68,68,0.8)' }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
@@ -1034,7 +1023,7 @@
                 new Chart(ctxP, {
                     type: 'bar',
                     data: {
-                        labels: ['النظافة','الاحترام','التعاون'],
+                        labels: ['نظافة', 'احترام', 'تعاون'],
                         datasets: [{ label: 'الإيجابيات', data: [posCounts.clean, posCounts.respect, posCounts.cooperate], backgroundColor: 'rgba(16,185,129,0.8)' }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
@@ -1043,40 +1032,40 @@
 
             function getAllLocalStorageData() {
                 var results = [];
-                var filterSuper = document.getElementById('adminTeacherFilter')?document.getElementById('adminTeacherFilter').value:'all';
-                var filterClass = document.getElementById('adminClassFilter')?document.getElementById('adminClassFilter').value:'all';
-                var filterDate = document.getElementById('adminDateFilter')?document.getElementById('adminDateFilter').value:'';
-                Object.keys(localStorage).forEach(key=>{
-                    if(key.indexOf('cafeteria_data_')===0) {
-                        var parts = key.replace('cafeteria_data_','').split('_');
+                var filterSuper = document.getElementById('adminTeacherFilter') ? document.getElementById('adminTeacherFilter').value : 'all';
+                var filterClass = document.getElementById('adminClassFilter') ? document.getElementById('adminClassFilter').value : 'all';
+                var filterDate = document.getElementById('adminDateFilter') ? document.getElementById('adminDateFilter').value : '';
+                Object.keys(localStorage).forEach(key => {
+                    if (key.indexOf('cafeteria_data_') === 0) {
+                        var parts = key.replace('cafeteria_data_', '').split('_');
                         var sId = parts[0];
                         var cName = parts.slice(1).join('_');
-                        if(filterSuper!=='all' && sId!==filterSuper) return;
-                        if(filterClass!=='all' && cName!==filterClass) return;
-                        var sup = supervisorsList.find(s=>s.id===sId);
-                        var history = JSON.parse(localStorage.getItem(key)||'{}');
-                        Object.keys(history).forEach(dateKey=>{
-                            if(filterDate && dateKey!==filterDate) return;
+                        if (filterSuper !== 'all' && sId !== filterSuper) return;
+                        if (filterClass !== 'all' && cName !== filterClass) return;
+                        var sup = supervisorsList.find(s => s.id === sId);
+                        var history = JSON.parse(localStorage.getItem(key) || '{}');
+                        Object.keys(history).forEach(dateKey => {
+                            if (filterDate && dateKey !== filterDate) return;
                             var dayData = history[dateKey];
-                            Object.keys(dayData).forEach(sName=>{
+                            Object.keys(dayData).forEach(sName => {
                                 var sd = dayData[sName];
                                 results.push({
-                                    supervisor: sup?sup.name:sId,
+                                    supervisor: sup ? sup.name : sId,
                                     class: cName,
                                     date: dateKey,
                                     student: sName,
-                                    entryTime: sd.entryTime||'',
-                                    exitTime: sd.exitTime||'',
-                                    state: sd.state||0,
-                                    clean: sd.positive?sd.positive.clean:0,
-                                    respect: sd.positive?sd.positive.respect:0,
-                                    cooperate: sd.positive?sd.positive.cooperate:0,
-                                    fight: sd.violations?sd.violations.fight:0,
-                                    bullying: sd.violations?sd.violations.bullying:0,
-                                    noise: sd.violations?sd.violations.noise:0,
-                                    litter: sd.violations?sd.violations.litter:0,
-                                    property: sd.violations?sd.violations.property:0,
-                                    note: sd.note||''
+                                    entryTime: sd.entryTime || '',
+                                    exitTime: sd.exitTime || '',
+                                    state: sd.state || 0,
+                                    clean: sd.positive ? sd.positive.clean : 0,
+                                    respect: sd.positive ? sd.positive.respect : 0,
+                                    cooperate: sd.positive ? sd.positive.cooperate : 0,
+                                    fight: sd.violations ? sd.violations.fight : 0,
+                                    bullying: sd.violations ? sd.violations.bullying : 0,
+                                    noise: sd.violations ? sd.violations.noise : 0,
+                                    litter: sd.violations ? sd.violations.litter : 0,
+                                    property: sd.violations ? sd.violations.property : 0,
+                                    note: sd.note || ''
                                 });
                             });
                         });
@@ -1087,138 +1076,148 @@
 
             function renderAdminTable() {
                 var tbodyAdmin = document.getElementById('adminViewTable').querySelector('tbody');
-                if(!tbodyAdmin) return;
+                if (!tbodyAdmin) return;
                 tbodyAdmin.innerHTML = '';
                 var results = getAllLocalStorageData();
-                results.forEach(r=>{
-                    var tr=document.createElement('tr');
-                    var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
-                    var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
-                    var cells = [r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state===0?'ملتزم':'بحاجة متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property, ratio+'%', r.note];
-                    cells.forEach(v=>{ var td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
+                results.forEach(r => {
+                    var tr = document.createElement('tr');
+                    var cells = [r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state === 0 ? 'ملتزم' : 'متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property,
+                        (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property) === 0 ? 100 : Math.round(((r.clean + r.respect + r.cooperate) / (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property)) * 100) + '%', r.note
+                    ];
+                    cells.forEach(v => { var td = document.createElement('td');
+                        td.textContent = v;
+                        tr.appendChild(td); });
                     tbodyAdmin.appendChild(tr);
                 });
-                if(results.length===0){
-                    var tr=document.createElement('tr');
-                    var td=document.createElement('td');
-                    td.colSpan=17;
-                    td.textContent='لا توجد بيانات';
+                if (results.length === 0) {
+                    var tr = document.createElement('tr');
+                    var td = document.createElement('td');
+                    td.colSpan = 17;
+                    td.textContent = 'لا توجد بيانات';
                     tr.appendChild(td);
                     tbodyAdmin.appendChild(tr);
                 }
             }
 
-            // ===== أزرار المدير =====
+            // ===== أزرار المشرف =====
             adminViewBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                var f1=document.getElementById('adminTeacherFilter');
-                f1.innerHTML='<option value="all">الكل</option>';
-                supervisorsList.forEach(s=>{ var opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; f1.appendChild(opt); });
-                var f2=document.getElementById('adminClassFilter');
-                f2.innerHTML='<option value="all">الكل</option>';
-                classesList.forEach(c=>{ var opt=document.createElement('option'); opt.value=c; opt.textContent=c; f2.appendChild(opt); });
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
+                var f1 = document.getElementById('adminTeacherFilter');
+                f1.innerHTML = '<option value="all">الكل</option>';
+                supervisorsList.forEach(s => { var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    f1.appendChild(opt); });
+                var f2 = document.getElementById('adminClassFilter');
+                f2.innerHTML = '<option value="all">الكل</option>';
+                classesList.forEach(c => { var opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    f2.appendChild(opt); });
                 document.getElementById('adminViewModal').classList.add('show');
                 renderAdminTable();
             };
-            document.getElementById('adminApplyFilterBtn').onclick = function(){ renderAdminTable(); };
-            document.getElementById('adminResetFilterBtn').onclick = function(){
-                document.getElementById('adminTeacherFilter').value='all';
-                document.getElementById('adminClassFilter').value='all';
-                document.getElementById('adminDateFilter').value='';
+            document.getElementById('adminApplyFilterBtn').onclick = function() { renderAdminTable(); };
+            document.getElementById('adminResetFilterBtn').onclick = function() {
+                document.getElementById('adminTeacherFilter').value = 'all';
+                document.getElementById('adminClassFilter').value = 'all';
+                document.getElementById('adminDateFilter').value = '';
                 renderAdminTable();
             };
-            document.getElementById('adminCloseModalBtn').onclick = function(){ document.getElementById('adminViewModal').classList.remove('show'); };
-            document.getElementById('adminViewModal').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('show'); });
+            document.getElementById('adminCloseModalBtn').onclick = function() { document.getElementById('adminViewModal').classList.remove('show'); };
+            document.getElementById('adminViewModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
 
-            // ===== تصدير كل البيانات (4 ورقات) =====
+            // ===== تصدير جميع البيانات (4 شيتات) =====
             exportAllDataBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
                 var results = getAllLocalStorageData();
-                if(results.length===0) { showMessage('لا توجد بيانات للتصدير','warning'); return; }
+                if (results.length === 0) { showMessage('لا توجد بيانات', 'warning'); return; }
                 var wb = new ExcelJS.Workbook();
-                var style = { alignment:{horizontal:'center',vertical:'middle'}, border:{top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}} };
 
                 var ws1 = wb.addWorksheet('ملخص المشرفين');
-                ws1.addRow(['المشرف','الصف','عدد الطلاب','الإيجابيات','المخالفات','نسبة الالتزام']);
+                ws1.addRow(['المشرف', 'القسم', 'عدد الطلاب', 'عدد الإيجابيات', 'عدد المخالفات', 'نسبة الالتزام']);
                 var supStats = {};
-                results.forEach(r=>{
-                    var key = r.supervisor+'||'+r.class;
-                    if(!supStats[key]) supStats[key]={supervisor:r.supervisor, class:r.class, students:new Set(), positives:0, violations:0};
+                results.forEach(r => {
+                    var key = r.supervisor + '||' + r.class;
+                    if (!supStats[key]) supStats[key] = { supervisor: r.supervisor, class: r.class, students: new Set(), positives: 0, violations: 0 };
                     supStats[key].students.add(r.student);
-                    supStats[key].positives += (r.clean+r.respect+r.cooperate);
-                    supStats[key].violations += (r.fight+r.bullying+r.noise+r.litter+r.property);
+                    supStats[key].positives += (r.clean + r.respect + r.cooperate);
+                    supStats[key].violations += (r.fight + r.bullying + r.noise + r.litter + r.property);
                 });
-                Object.keys(supStats).forEach(k=>{
-                    var s=supStats[k];
-                    var total = s.positives+s.violations;
-                    var ratio = total===0?100:Math.round((s.positives/total)*100);
-                    ws1.addRow([s.supervisor, s.class, s.students.size, s.positives, s.violations, ratio+'%']);
+                Object.keys(supStats).forEach(k => {
+                    var s = supStats[k];
+                    var total = s.positives + s.violations;
+                    var ratio = total === 0 ? 100 : Math.round((s.positives / total) * 100);
+                    ws1.addRow([s.supervisor, s.class, s.students.size, s.positives, s.violations, ratio + '%']);
                 });
-                ws1.columns.forEach(c=>c.width=18);
+                ws1.columns.forEach(c => c.width = 18);
 
-                var ws2 = wb.addWorksheet('جميع السجلات');
-                ws2.addRow(['المشرف','الصف','التاريخ','الطالب','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام','ملاحظات']);
-                results.forEach(r=>{
-                    var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
-                    var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
-                    ws2.addRow([r.supervisor,r.class,r.date,r.student,r.entryTime,r.exitTime,r.state===0?'ملتزم':'بحاجة متابعة',r.clean,r.respect,r.cooperate,r.fight,r.bullying,r.noise,r.litter,r.property,ratio+'%',r.note]);
+                var ws2 = wb.addWorksheet('كل السجلات');
+                ws2.addRow(['المشرف', 'القسم', 'التاريخ', 'الطالب', 'دخول', 'خروج', 'الحالة', 'نظافة', 'احترام', 'تعاون', 'تشاجر', 'تنمر', 'إزعاج', 'رمي نفايات', 'عبث ممتلكات', 'نسبة الالتزام', 'ملاحظات']);
+                results.forEach(r => {
+                    var total = r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property;
+                    var ratio = total === 0 ? 100 : Math.round(((r.clean + r.respect + r.cooperate) / total) * 100);
+                    ws2.addRow([r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state === 0 ? 'ملتزم' : 'متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property, ratio + '%', r.note]);
                 });
-                ws2.columns.forEach(c=>c.width=14);
+                ws2.columns.forEach(c => c.width = 14);
 
                 var ws3 = wb.addWorksheet('ملخص الطلاب');
                 var studentSum = {};
-                results.forEach(r=>{
-                    if(!studentSum[r.student]) studentSum[r.student]={pos:0,vio:0};
-                    studentSum[r.student].pos += (r.clean+r.respect+r.cooperate);
-                    studentSum[r.student].vio += (r.fight+r.bullying+r.noise+r.litter+r.property);
+                results.forEach(r => {
+                    if (!studentSum[r.student]) studentSum[r.student] = { pos: 0, vio: 0 };
+                    studentSum[r.student].pos += (r.clean + r.respect + r.cooperate);
+                    studentSum[r.student].vio += (r.fight + r.bullying + r.noise + r.litter + r.property);
                 });
-                ws3.addRow(['الطالب','مجموع الإيجابيات','مجموع المخالفات','نسبة الالتزام']);
-                Object.keys(studentSum).forEach(s=>{
+                ws3.addRow(['الطالب', 'إجمالي الإيجابيات', 'إجمالي المخالفات', 'نسبة الالتزام']);
+                Object.keys(studentSum).forEach(s => {
                     var t = studentSum[s];
-                    var ratio = t.pos+t.vio===0?100:Math.round((t.pos/(t.pos+t.vio))*100);
-                    ws3.addRow([s,t.pos,t.vio,ratio+'%']);
+                    var ratio = t.pos + t.vio === 0 ? 100 : Math.round((t.pos / (t.pos + t.vio)) * 100);
+                    ws3.addRow([s, t.pos, t.vio, ratio + '%']);
                 });
-                ws3.columns.forEach(c=>c.width=20);
+                ws3.columns.forEach(c => c.width = 20);
 
                 var ws4 = wb.addWorksheet('إحصائيات عامة');
-                var totalPos=0,totalVio=0,totalStudents=new Set();
-                results.forEach(r=>{
-                    totalPos += (r.clean+r.respect+r.cooperate);
-                    totalVio += (r.fight+r.bullying+r.noise+r.litter+r.property);
+                var totalPos = 0,
+                    totalVio = 0,
+                    totalStudents = new Set();
+                results.forEach(r => {
+                    totalPos += (r.clean + r.respect + r.cooperate);
+                    totalVio += (r.fight + r.bullying + r.noise + r.litter + r.property);
                     totalStudents.add(r.student);
                 });
-                ws4.addRow(['العنصر','القيمة']);
+                ws4.addRow(['البند', 'القيمة']);
                 ws4.addRow(['إجمالي الطلاب', totalStudents.size]);
                 ws4.addRow(['إجمالي الإيجابيات', totalPos]);
                 ws4.addRow(['إجمالي المخالفات', totalVio]);
-                ws4.addRow(['نسبة الالتزام الكلية', totalPos+totalVio===0?100:Math.round((totalPos/(totalPos+totalVio))*100)+'%']);
-                ws4.columns.forEach(c=>c.width=25);
+                ws4.addRow(['نسبة الالتزام الكلية', totalPos + totalVio === 0 ? 100 : Math.round((totalPos / (totalPos + totalVio)) * 100) + '%']);
+                ws4.columns.forEach(c => c.width = 25);
 
-                wb.xlsx.writeBuffer().then(function(buf){
-                    var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-                    var a=document.createElement('a');
-                    a.href=URL.createObjectURL(blob);
-                    a.download='تقرير_المقصف_الكامل_'+formattedSelectedDate()+'.xlsx';
+                wb.xlsx.writeBuffer().then(function(buf) {
+                    var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'تقرير_المطعم_الشامل_' + formattedSelectedDate() + '.xlsx';
                     a.click();
                     URL.revokeObjectURL(a.href);
-                    showMessage('✅ تم تصدير التقرير الكامل','success');
-                }).catch(e=>{ console.error(e); showMessage('❌ خطأ في التصدير','error'); });
+                    showMessage('✅ تم تصدير التقرير الشامل', 'success');
+                }).catch(e => { console.error(e);
+                    showMessage('❌ خطأ في التصدير', 'error'); });
             };
 
-            // ===== عرض قاعدة البيانات =====
+            // ===== زر عرض قاعدة البيانات =====
             viewAllDataBtn.onclick = function() {
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
                 var results = getAllLocalStorageData();
-                if(results.length===0) { showMessage('لا توجد بيانات','warning'); return; }
+                if (results.length === 0) { showMessage('لا توجد بيانات', 'warning'); return; }
                 var container = document.getElementById('adminDataContainer');
-                container.style.display='block';
+                container.style.display = 'block';
                 container.innerHTML = `
                     <div style="display:flex; justify-content:space-between; border-bottom:2px solid #e5e7eb; padding-bottom:10px; margin-bottom:15px;">
-                        <h3><i class="fas fa-database"></i> قاعدة بيانات المقصف</h3>
+                        <h3><i class="fas fa-database"></i> قاعدة بيانات المطعم</h3>
                         <button onclick="document.getElementById('adminDataContainer').style.display='none'" style="background:#ef4444;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;">إغلاق</button>
                     </div>
                     <div class="stats-grid">
-                        <div class="stat-card green"><span>السجلات</span><h2>${results.length}</h2></div>
+                        <div class="stat-card green"><span>عدد السجلات</span><h2>${results.length}</h2></div>
                         <div class="stat-card green"><span>الطلاب الفريدون</span><h2>${new Set(results.map(r=>r.student)).size}</h2></div>
                         <div class="stat-card yellow"><span>إجمالي الإيجابيات</span><h2>${results.reduce((sum,r)=>sum+r.clean+r.respect+r.cooperate,0)}</h2></div>
                         <div class="stat-card red"><span>إجمالي المخالفات</span><h2>${results.reduce((sum,r)=>sum+r.fight+r.bullying+r.noise+r.litter+r.property,0)}</h2></div>
@@ -1226,339 +1225,375 @@
                     <div style="max-height:300px; overflow-y:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:12px;">
                             <thead><tr style="background:#0b6e4f;color:#fff;position:sticky;top:0;">
-                                <th>المشرف</th><th>الصف</th><th>التاريخ</th><th>الطالب</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>النظافة</th><th>الاحترام</th><th>التعاون</th><th>مشاجرة</th><th>تنمر</th><th>ضوضاء</th><th>نفايات</th><th>إتلاف</th><th>نسبة الالتزام</th>
+                                <th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th>
                             </tr></thead>
                             <tbody>
                                 ${results.map(r=>{
                                     var total = r.clean+r.respect+r.cooperate+r.fight+r.bullying+r.noise+r.litter+r.property;
                                     var ratio = total===0?100:Math.round(((r.clean+r.respect+r.cooperate)/total)*100);
-                                    return `<tr><td>${r.supervisor}</td><td>${r.class}</td><td>${r.date}</td><td>${r.student}</td><td>${r.entryTime}</td><td>${r.exitTime}</td><td>${r.state===0?'ملتزم':'بحاجة متابعة'}</td><td>${r.clean}</td><td>${r.respect}</td><td>${r.cooperate}</td><td>${r.fight}</td><td>${r.bullying}</td><td>${r.noise}</td><td>${r.litter}</td><td>${r.property}</td><td>${ratio}%</td></tr>`;
+                                    return `<tr><td>${r.supervisor}</td><td>${r.class}</td><td>${r.date}</td><td>${r.student}</td><td>${r.entryTime}</td><td>${r.exitTime}</td><td>${r.state===0?'ملتزم':'متابعة'}</td><td>${r.clean}</td><td>${r.respect}</td><td>${r.cooperate}</td><td>${r.fight}</td><td>${r.bullying}</td><td>${r.noise}</td><td>${r.litter}</td><td>${r.property}</td><td>${ratio}%</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
                     </div>
                 `;
-                container.scrollIntoView({behavior:'smooth'});
+                container.scrollIntoView({ behavior: 'smooth' });
             };
 
             // ===== ربط الأحداث =====
-            teacherSelect.addEventListener('change', function(e){ selectSupervisor(e.target.value); });
-            classSelect.addEventListener('change', function(e){ currentClass=e.target.value; if(currentSupervisorId) loadData(); });
+            teacherSelect.addEventListener('change', function(e) { selectSupervisor(e.target.value); });
+            classSelect.addEventListener('change', function(e) { currentClass = e.target.value; if (currentSupervisorId) loadData(); });
 
-            addTeacherBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
+            addTeacherBtn.addEventListener('click', function() {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
                 var name = newTeacherNameInput.value.trim();
                 var role = newTeacherSubjectSelect.value;
-                if(!name || !role) { showMessage('أدخل الاسم والصلاحية','error'); return; }
-                var newSup = { id:'s_'+Date.now(), name:name, subject:role, icon:'fa-user-tie' };
+                if (!name || !role) { showMessage('أدخل الاسم والدور', 'error'); return; }
+                var newSup = { id: 's_' + Date.now(), name: name, subject: role, icon: 'fa-user-tie' };
                 supervisorsList.push(newSup);
                 saveSupervisorsList();
                 initSupervisorSelect();
                 teacherSelect.value = newSup.id;
                 selectSupervisor(newSup.id);
-                newTeacherNameInput.value='';
-                newTeacherSubjectSelect.value='';
-                showMessage('✅ تم إضافة المشرف','success');
+                newTeacherNameInput.value = '';
+                newTeacherSubjectSelect.value = '';
+                showMessage('✅ تم إضافة المشرف', 'success');
             });
 
-            deleteTeacherBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                if(!currentSupervisorId) { showMessage(T.errorSelectSupervisor,'error'); return; }
-                if(!confirm(T.confirmDeleteSupervisor)) return;
-                supervisorsList = supervisorsList.filter(s=>s.id!==currentSupervisorId);
+            deleteTeacherBtn.addEventListener('click', function() {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
+                if (!currentSupervisorId) { showMessage(T().errorSelectSupervisor, 'error'); return; }
+                if (!confirm(T().confirmDeleteSupervisor)) return;
+                supervisorsList = supervisorsList.filter(s => s.id !== currentSupervisorId);
                 saveSupervisorsList();
-                var keys = Object.keys(localStorage).filter(k=>k.indexOf('cafeteria_data_'+currentSupervisorId+'_')===0 || k.indexOf('cafeteria_names_'+currentSupervisorId+'_')===0);
-                keys.forEach(k=>localStorage.removeItem(k));
-                if(storageMode==='cloud' && currentUser && isFirebaseInitialized) {
+                var keys = Object.keys(localStorage).filter(k => k.indexOf('cafeteria_data_' + currentSupervisorId + '_') === 0 || k.indexOf('cafeteria_names_' + currentSupervisorId + '_') === 0);
+                keys.forEach(k => localStorage.removeItem(k));
+                if (storageMode === 'cloud' && currentUser && isFirebaseInitialized) {
                     var path = FIREBASE_PATH();
-                    if(path) firebaseDb.ref(path).remove().catch(e=>console.error(e));
+                    if (path) firebaseDb.ref(path).remove().catch(e => console.error(e));
                 }
-                currentSupervisorId=null;
-                teacherCardContainer.innerHTML='';
-                studentsContainer.innerHTML='';
-                tbody.innerHTML='';
-                boardTitleEl.textContent=T.boardTitle;
+                currentSupervisorId = null;
+                teacherCardContainer.innerHTML = '';
+                studentsContainer.innerHTML = '';
+                tbody.innerHTML = '';
+                boardTitleEl.textContent = T().boardTitle;
                 initSupervisorSelect();
-                showMessage(T.supervisorDeleted,'success');
+                showMessage(T().supervisorDeleted, 'success');
             });
 
-            deleteAllTeachersBtn.addEventListener('click', function(){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                if(!confirm(T.confirmDeleteAll)) return;
+            deleteAllTeachersBtn.addEventListener('click', function() {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
+                if (!confirm(T().confirmDeleteAll)) return;
                 supervisorsList = [];
                 saveSupervisorsList();
-                currentSupervisorId=null;
-                currentClass=null;
-                teacherCardContainer.innerHTML='';
-                studentsContainer.innerHTML='';
-                tbody.innerHTML='';
-                boardTitleEl.textContent=T.boardTitle;
+                currentSupervisorId = null;
+                currentClass = null;
+                teacherCardContainer.innerHTML = '';
+                studentsContainer.innerHTML = '';
+                tbody.innerHTML = '';
+                boardTitleEl.textContent = T().boardTitle;
                 initSupervisorSelect();
-                showMessage(T.allDeleted,'success');
+                showMessage(T().allDeleted, 'success');
             });
 
-            importTeachersInput.addEventListener('change', function(e){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                var file=e.target.files[0];
-                if(!file) return;
-                var reader=new FileReader();
-                reader.onload=function(evt){
-                    try{
-                        var wb=XLSX.read(evt.target.result,{type:'binary'});
-                        var sheet=wb.Sheets[wb.SheetNames[0]];
-                        var rows=XLSX.utils.sheet_to_json(sheet,{header:1});
-                        var added=0;
-                        rows.forEach(row=>{
-                            var name=row[0]?row[0].toString().trim():null;
-                            var role=(row[1]?row[1].toString().trim():null)||'مشرف مقصف';
-                            if(name && !supervisorsList.find(s=>s.name===name)){
-                                supervisorsList.push({id:'s_'+Date.now()+'_'+Math.random().toString(36).substr(2,5), name:name, subject:role, icon:'fa-user-tie'});
+            importTeachersInput.addEventListener('change', function(e) {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
+                var file = e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        var wb = XLSX.read(evt.target.result, { type: 'binary' });
+                        var sheet = wb.Sheets[wb.SheetNames[0]];
+                        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        var added = 0;
+                        rows.forEach(row => {
+                            var name = row[0] ? row[0].toString().trim() : null;
+                            var role = (row[1] ? row[1].toString().trim() : null) || 'مشرف مطعم';
+                            if (name && !supervisorsList.find(s => s.name === name)) {
+                                supervisorsList.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5), name: name, subject: role, icon: 'fa-user-tie' });
                                 added++;
                             }
                         });
-                        if(added>0){ saveSupervisorsList(); initSupervisorSelect(); showMessage('تم استيراد '+added+' مشرفين','success'); }
-                        else showMessage('لم يتم إضافة مشرفين','info');
-                        importTeachersInput.value='';
-                    }catch(err){ showMessage('خطأ في قراءة الملف','error'); }
+                        if (added > 0) { saveSupervisorsList();
+                            initSupervisorSelect();
+                            showMessage('تم استيراد ' + added + ' مشرف', 'success'); } else showMessage('لم يتم إضافة مشرفين', 'info');
+                        importTeachersInput.value = '';
+                    } catch (err) { showMessage('خطأ في قراءة الملف', 'error'); }
                 };
                 reader.readAsBinaryString(file);
             });
 
-            addStudentBtn.addEventListener('click', async function(){
-                if(!currentSupervisorId || !currentClass) { showMessage(T.errorSelectSupervisor+' و '+T.errorSelectClass,'error'); return; }
+            addStudentBtn.addEventListener('click', async function() {
+                if (!currentSupervisorId || !currentClass) { showMessage(T().errorSelectSupervisor + ' و ' + T().errorSelectClass, 'error'); return; }
                 var name = newStudentNameInput.value.trim();
-                if(!name) { showMessage('أدخل اسم الطالب','error'); return; }
-                if(originalStudentNames.includes(name)) { showMessage('الطالب موجود بالفعل','warning'); return; }
+                if (!name) { showMessage('أدخل اسم الطالب', 'error'); return; }
+                if (originalStudentNames.includes(name)) { showMessage('الطالب موجود', 'warning'); return; }
                 originalStudentNames.push(name);
-                studentNames = originalStudentNames.slice();
-                data[name] = { state:0, entryTime:'', exitTime:'', positive:{clean:0,respect:0,cooperate:0}, violations:{fight:0,bullying:0,noise:0,litter:0,property:0}, note:'' };
-                newStudentNameInput.value='';
+                updateDisplayNames();
+                data[name] = { state: 0, entryTime: '', exitTime: '', positive: { clean: 0, respect: 0, cooperate: 0 }, violations: { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 }, note: '' };
+                newStudentNameInput.value = '';
                 await saveAll();
-                initStudentsUI(); updateTable(); updateStats();
-                showMessage(T.studentAdded,'success');
+                refreshUI();
+                showMessage(T().studentAdded, 'success');
             });
 
-            importExcel.addEventListener('change', async function(e){
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
-                var file=e.target.files[0];
-                if(!file) return;
-                var reader=new FileReader();
-                reader.onload=async function(evt){
-                    try{
-                        var wb=XLSX.read(evt.target.result,{type:'binary'});
-                        var sheet=wb.Sheets[wb.SheetNames[0]];
-                        var rows=XLSX.utils.sheet_to_json(sheet,{header:1});
-                        var names=rows.map(r=>r[0]).filter(Boolean).map(n=>n.toString().trim());
+            importExcel.addEventListener('change', async function(e) {
+                if (!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً', 'error'); return; }
+                var file = e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = async function(evt) {
+                    try {
+                        var wb = XLSX.read(evt.target.result, { type: 'binary' });
+                        var sheet = wb.Sheets[wb.SheetNames[0]];
+                        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        var names = rows.map(r => r[0]).filter(Boolean).map(n => n.toString().trim());
                         originalStudentNames = names;
-                        studentNames = originalStudentNames.slice();
+                        updateDisplayNames();
                         ensureAllStudentsInData();
-                        initStudentsUI(); updateTable(); updateStats();
+                        refreshUI();
                         await saveAll();
-                        showMessage('تم تحميل '+originalStudentNames.length+' طالب','success');
-                        importExcel.value='';
-                    }catch(err){ showMessage('خطأ في قراءة الملف','error'); }
+                        showMessage('تم تحميل ' + originalStudentNames.length + ' طالب', 'success');
+                        importExcel.value = '';
+                    } catch (err) { showMessage('خطأ في الملف', 'error'); }
                 };
                 reader.readAsBinaryString(file);
             });
 
             exportExcel.addEventListener('click', function() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
-                var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
-                var supName = sup?sup.name:'';
+                if (!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً', 'error'); return; }
+                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
+                var supName = sup ? sup.name : '';
                 var rows = [];
-                var header = ['الاسم','التقييم','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام','ملاحظات'];
+                var header = ['الاسم', 'التقييم', 'دخول', 'خروج', 'الحالة', 'نظافة', 'احترام', 'تعاون', 'تشاجر', 'تنمر', 'إزعاج', 'رمي نفايات', 'عبث ممتلكات', 'نسبة الالتزام', 'ملاحظات'];
                 rows.push(header);
-                studentNames.forEach((dn,idx)=>{
+                studentNames.forEach((dn, idx) => {
                     var on = originalStudentNames[idx] || dn;
                     var sd = data[on] || {};
-                    var pos = sd.positive||{clean:0,respect:0,cooperate:0};
-                    var vio = sd.violations||{fight:0,bullying:0,noise:0,litter:0,property:0};
-                    var total = pos.clean+pos.respect+pos.cooperate+vio.fight+vio.bullying+vio.noise+vio.litter+vio.property;
-                    var ratio = total===0?100:Math.round(((pos.clean+pos.respect+pos.cooperate)/total)*100);
+                    var pos = sd.positive || { clean: 0, respect: 0, cooperate: 0 };
+                    var vio = sd.violations || { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 };
+                    var total = pos.clean + pos.respect + pos.cooperate + vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
+                    var ratio = total === 0 ? 100 : Math.round(((pos.clean + pos.respect + pos.cooperate) / total) * 100);
                     rows.push([
                         dn,
-                        sd.state===0?'ملتزم':'بحاجة متابعة',
-                        sd.entryTime||'',
-                        sd.exitTime||'',
-                        sd.state===0?'ملتزم':'بحاجة متابعة',
+                        sd.state === 0 ? 'ملتزم' : 'متابعة',
+                        sd.entryTime || '',
+                        sd.exitTime || '',
+                        sd.state === 0 ? 'ملتزم' : 'متابعة',
                         pos.clean, pos.respect, pos.cooperate,
                         vio.fight, vio.bullying, vio.noise, vio.litter, vio.property,
-                        ratio+'%',
-                        sd.note||''
+                        ratio + '%',
+                        sd.note || ''
                     ]);
                 });
                 var wb = XLSX.utils.book_new();
                 var ws = XLSX.utils.aoa_to_sheet(rows);
-                XLSX.utils.book_append_sheet(wb, ws, 'المقصف');
-                XLSX.writeFile(wb, `تقرير_المقصف_${supName}_${currentClass}_${formattedSelectedDate()}.xlsx`);
+                XLSX.utils.book_append_sheet(wb, ws, 'المطعم');
+                XLSX.writeFile(wb, `تقرير_المطعم_${supName}_${currentClass}_${formattedSelectedDate()}.xlsx`);
             });
 
             resetAllCountersBtn.addEventListener('click', resetToday);
 
-            toggleCalendarBtn.addEventListener('click', function(){ calendarWrapper.classList.toggle('show'); });
-            prevMonthBtn.addEventListener('click', function(){ calendarDate.setMonth(calendarDate.getMonth()-1); renderCalendar(); });
-            nextMonthBtn.addEventListener('click', function(){ calendarDate.setMonth(calendarDate.getMonth()+1); renderCalendar(); });
+            toggleCalendarBtn.addEventListener('click', function() { calendarWrapper.classList.toggle('show'); });
+            prevMonthBtn.addEventListener('click', function() { calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar(); });
+            nextMonthBtn.addEventListener('click', function() { calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar(); });
 
-            classTitleInput.addEventListener('input', function(){
-                boardTitleEl.textContent = T.boardTitle + ' - ' + classTitleInput.value;
+            classTitleInput.addEventListener('input', function() {
+                boardTitleEl.textContent = T().boardTitle + ' - ' + classTitleInput.value;
             });
 
-            // ===== زر التقرير الكامل =====
+            // ===== زر التقرير الشامل =====
             document.getElementById('showYearReportBtn').onclick = async function() {
-                if(!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وصفاً','error'); return; }
-                var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
-                var supName = sup?sup.name:'';
+                if (!currentSupervisorId || !currentClass) { showMessage('اختر مشرفاً وقسماً', 'error'); return; }
+                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
+                var supName = sup ? sup.name : '';
                 var wb = new ExcelJS.Workbook();
-                var ws = wb.addWorksheet('التقرير الكامل');
-                ws.addRow(['🍽️ تقرير المقصف الكامل - '+supName+' - '+currentClass]);
+                var ws = wb.addWorksheet('التقرير الشامل');
+                ws.addRow(['🍽️ تقرير المطعم المدرسي - ' + supName + ' - ' + currentClass]);
                 ws.addRow([]);
-                ws.addRow(['الاسم','الدخول','الخروج','الحالة','النظافة','الاحترام','التعاون','مشاجرة','تنمر','ضوضاء','نفايات','إتلاف','نسبة الالتزام']);
+                ws.addRow(['الاسم', 'دخول', 'خروج', 'الحالة', 'نظافة', 'احترام', 'تعاون', 'تشاجر', 'تنمر', 'إزعاج', 'رمي نفايات', 'عبث ممتلكات', 'نسبة الالتزام']);
                 var sortedDates = Object.keys(allHistoryData).sort();
-                sortedDates.forEach(dateKey=>{
+                sortedDates.forEach(dateKey => {
                     var dayData = allHistoryData[dateKey] || {};
-                    originalStudentNames.forEach((on,idx)=>{
+                    originalStudentNames.forEach((on, idx) => {
                         var dn = studentNames[idx] || on;
                         var sd = dayData[on] || {};
-                        var pos = sd.positive||{clean:0,respect:0,cooperate:0};
-                        var vio = sd.violations||{fight:0,bullying:0,noise:0,litter:0,property:0};
-                        var total = pos.clean+pos.respect+pos.cooperate+vio.fight+vio.bullying+vio.noise+vio.litter+vio.property;
-                        var ratio = total===0?100:Math.round(((pos.clean+pos.respect+pos.cooperate)/total)*100);
+                        var pos = sd.positive || { clean: 0, respect: 0, cooperate: 0 };
+                        var vio = sd.violations || { fight: 0, bullying: 0, noise: 0, litter: 0, property: 0 };
+                        var total = pos.clean + pos.respect + pos.cooperate + vio.fight + vio.bullying + vio.noise + vio.litter + vio.property;
+                        var ratio = total === 0 ? 100 : Math.round(((pos.clean + pos.respect + pos.cooperate) / total) * 100);
                         ws.addRow([
                             dn,
-                            sd.entryTime||'',
-                            sd.exitTime||'',
-                            sd.state===0?'ملتزم':'بحاجة متابعة',
+                            sd.entryTime || '',
+                            sd.exitTime || '',
+                            sd.state === 0 ? 'ملتزم' : 'متابعة',
                             pos.clean, pos.respect, pos.cooperate,
                             vio.fight, vio.bullying, vio.noise, vio.litter, vio.property,
-                            ratio+'%'
+                            ratio + '%'
                         ]);
                     });
                 });
-                ws.columns.forEach(c=>c.width=15);
+                ws.columns.forEach(c => c.width = 15);
                 var buf = await wb.xlsx.writeBuffer();
-                var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-                var a=document.createElement('a');
-                a.href=URL.createObjectURL(blob);
-                a.download=`تقرير_المقصف_الكامل_${supName}_${currentClass}.xlsx`;
+                var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `تقرير_المطعم_الشامل_${supName}_${currentClass}.xlsx`;
                 a.click();
                 URL.revokeObjectURL(a.href);
-                showMessage('✅ تم تصدير التقرير الكامل','success');
+                showMessage('✅ تم تصدير التقرير الشامل', 'success');
             };
 
-            // ===== مصادقة Firebase =====
+            // ===== Firebase Auth =====
             function updateFirebaseUI() {
-                if(currentUser) {
-                    var email = currentUser.email || 'غير متصل';
-                    firebaseStatus.innerHTML = '<i class="fas fa-user"></i> '+email.substring(0,20);
+                var t = T();
+                if (currentUser) {
+                    var email = currentUser.email || t.firebase.offline;
+                    firebaseStatus.innerHTML = '<i class="fas fa-user"></i> ' + email.substring(0, 20);
                     firebaseStatus.className = 'firebase-status online';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> خروج';
-                    if(isAdminUser()) document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('show'));
-                    else document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
+                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج';
+                    if (isAdminUser()) document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
+                    else document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('show'));
                 } else {
-                    firebaseStatus.innerHTML = '<i class="fas fa-wifi"></i> '+T.firebase.offline;
+                    firebaseStatus.innerHTML = '<i class="fas fa-wifi"></i> ' + t.firebase.offline;
                     firebaseStatus.className = 'firebase-status offline';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
-                    document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('show'));
                 }
-                if(storageMode==='local') { useLocalBtn.style.opacity='1'; useCloudBtn.style.opacity='0.7'; }
-                else { useLocalBtn.style.opacity='0.7'; useCloudBtn.style.opacity='1'; }
-                syncDataBtn.disabled = !currentUser || storageMode!=='cloud';
+                if (storageMode === 'local') { useLocalBtn.style.opacity = '1';
+                    useCloudBtn.style.opacity = '0.7'; } else { useLocalBtn.style.opacity = '0.7';
+                    useCloudBtn.style.opacity = '1'; }
+                syncDataBtn.disabled = !currentUser || storageMode !== 'cloud';
                 applyRoleVisibility();
             }
 
             function setStorageMode(mode) {
-                storageMode=mode;
-                localStorage.setItem('storage_mode',mode);
-                if(mode==='cloud' && !currentUser) { showMessage(T.firebase.authError,'error'); showLoginForm(); return; }
+                storageMode = mode;
+                localStorage.setItem('storage_mode', mode);
+                if (mode === 'cloud' && !currentUser) { showMessage(T().firebase.authError, 'error');
+                    showLoginForm(); return; }
                 updateFirebaseUI();
-                if(currentSupervisorId && currentClass) loadData();
-                showMessage(mode==='local'?'التخزين المحلي نشط':'التخزين السحابي نشط','success');
+                if (currentSupervisorId && currentClass) loadData();
+                showMessage(mode === 'local' ? 'التخزين المحلي مفعل' : 'التخزين السحابي مفعل', 'success');
             }
 
-            function showLoginForm() { loginForm.classList.add('show'); loginMessage.textContent=''; }
-            function hideLoginForm() { loginForm.classList.remove('show'); loginEmail.value=''; loginPassword.value=''; loginMessage.textContent=''; }
+            function showLoginForm() { loginForm.classList.add('show');
+                loginMessage.textContent = ''; }
+
+            function hideLoginForm() { loginForm.classList.remove('show');
+                loginEmail.value = '';
+                loginPassword.value = '';
+                loginMessage.textContent = ''; }
 
             async function loginWithEmail() {
-                var email=loginEmail.value.trim(), pass=loginPassword.value.trim();
-                if(!email || !pass) { loginMessage.textContent='⚠️ أدخل البريد وكلمة المرور'; loginMessage.style.color='#dc2626'; return; }
-                loginMessage.textContent='⏳ جاري الدخول...';
-                loginMessage.style.color='#4285f4';
+                var email = loginEmail.value.trim(),
+                    pass = loginPassword.value.trim();
+                if (!email || !pass) { loginMessage.textContent = '⚠️ أدخل البريد وكلمة المرور';
+                    loginMessage.style.color = '#dc2626'; return; }
+                loginMessage.textContent = '⏳ جاري الدخول...';
+                loginMessage.style.color = '#4285f4';
                 try {
-                    var cred = await firebaseAuth.signInWithEmailAndPassword(email,pass);
+                    var cred = await firebaseAuth.signInWithEmailAndPassword(email, pass);
                     currentUser = cred.user;
-                    await firebaseDb.ref('users/'+currentUser.uid+'/profile').update({email:email, lastLogin:new Date().toISOString()});
-                    loginMessage.textContent='✅ تم الدخول';
-                    loginMessage.style.color='#34a853';
-                    showMessage('مرحباً '+email,'success');
-                    setTimeout(()=>{ hideLoginForm(); updateFirebaseUI(); if(currentSupervisorId && currentClass) loadData(); renderAdminCharts(); }, 1000);
-                } catch(err) {
-                    loginMessage.textContent='❌ '+err.message;
-                    loginMessage.style.color='#dc2626';
+                    await firebaseDb.ref('users/' + currentUser.uid + '/profile').update({ email: email, lastLogin: new Date().toISOString() });
+                    loginMessage.textContent = '✅ تم الدخول';
+                    loginMessage.style.color = '#34a853';
+                    showMessage('مرحباً ' + email, 'success');
+                    setTimeout(() => { hideLoginForm();
+                        updateFirebaseUI(); if (currentSupervisorId && currentClass) loadData();
+                        renderAdminCharts(); }, 1000);
+                } catch (err) {
+                    loginMessage.textContent = '❌ ' + err.message;
+                    loginMessage.style.color = '#dc2626';
                 }
             }
 
             async function registerWithEmail() {
-                var email=loginEmail.value.trim(), pass=loginPassword.value.trim();
-                if(!email || !pass) { loginMessage.textContent='⚠️ أدخل البريد وكلمة المرور'; return; }
-                if(pass.length<6) { loginMessage.textContent='⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
-                loginMessage.textContent='⏳ جاري التسجيل...';
-                loginMessage.style.color='#4285f4';
+                var email = loginEmail.value.trim(),
+                    pass = loginPassword.value.trim();
+                if (!email || !pass) { loginMessage.textContent = '⚠️ أدخل البريد وكلمة المرور'; return; }
+                if (pass.length < 6) { loginMessage.textContent = '⚠️ كلمة المرور 6 أحرف على الأقل'; return; }
+                loginMessage.textContent = '⏳ جاري التسجيل...';
+                loginMessage.style.color = '#4285f4';
                 try {
-                    var cred = await firebaseAuth.createUserWithEmailAndPassword(email,pass);
-                    currentUser=cred.user;
-                    await firebaseDb.ref('users/'+currentUser.uid+'/profile').set({email:email, name:email.split('@')[0]||'مستخدم', role:email==='a7112119@gmail.com'?'admin':'user', createdAt:new Date().toISOString()});
-                    loginMessage.textContent='✅ تم التسجيل';
-                    loginMessage.style.color='#34a853';
-                    showMessage('تم إنشاء الحساب','success');
-                    setTimeout(()=>{ hideLoginForm(); updateFirebaseUI(); if(currentSupervisorId && currentClass) loadData(); renderAdminCharts(); }, 1000);
-                } catch(err) {
-                    loginMessage.textContent='❌ '+err.message;
-                    loginMessage.style.color='#dc2626';
+                    var cred = await firebaseAuth.createUserWithEmailAndPassword(email, pass);
+                    currentUser = cred.user;
+                    await firebaseDb.ref('users/' + currentUser.uid + '/profile').set({ email: email, name: email.split('@')[0] || 'مستخدم', role: email === 'a7112119@gmail.com' ? 'admin' : 'user', createdAt: new Date().toISOString() });
+                    loginMessage.textContent = '✅ تم التسجيل';
+                    loginMessage.style.color = '#34a853';
+                    showMessage('تم إنشاء الحساب', 'success');
+                    setTimeout(() => { hideLoginForm();
+                        updateFirebaseUI(); if (currentSupervisorId && currentClass) loadData();
+                        renderAdminCharts(); }, 1000);
+                } catch (err) {
+                    loginMessage.textContent = '❌ ' + err.message;
+                    loginMessage.style.color = '#dc2626';
                 }
             }
 
             async function loginAnonymously() {
-                loginMessage.textContent='⏳ جاري الدخول مجهولاً...';
+                loginMessage.textContent = '⏳ جاري الدخول كمجهول...';
                 try {
                     var cred = await firebaseAuth.signInAnonymously();
-                    currentUser=cred.user;
-                    await firebaseDb.ref('users/'+currentUser.uid+'/profile').set({name:'مجهول', role:'anonymous', createdAt:new Date().toISOString()});
-                    loginMessage.textContent='✅ دخول مجهول';
-                    loginMessage.style.color='#34a853';
-                    showMessage('تم الدخول مجهولاً','success');
-                    setTimeout(()=>{ hideLoginForm(); updateFirebaseUI(); if(currentSupervisorId && currentClass) loadData(); renderAdminCharts(); }, 1000);
-                } catch(err) { loginMessage.textContent='❌ '+err.message; loginMessage.style.color='#dc2626'; }
+                    currentUser = cred.user;
+                    await firebaseDb.ref('users/' + currentUser.uid + '/profile').set({ name: 'مجهول', role: 'anonymous', createdAt: new Date().toISOString() });
+                    loginMessage.textContent = '✅ دخول مجهول';
+                    loginMessage.style.color = '#34a853';
+                    showMessage('دخول كمجهول', 'success');
+                    setTimeout(() => { hideLoginForm();
+                        updateFirebaseUI(); if (currentSupervisorId && currentClass) loadData();
+                        renderAdminCharts(); }, 1000);
+                } catch (err) { loginMessage.textContent = '❌ ' + err.message;
+                    loginMessage.style.color = '#dc2626'; }
             }
 
             async function logout() {
-                try { await firebaseAuth.signOut(); currentUser=null; showMessage(T.firebase.logoutSuccess,'success'); updateFirebaseUI(); allHistoryData={}; data={}; originalStudentNames=[]; studentNames=[]; initStudentsUI(); updateTable(); updateStats(); } catch(err){ console.error(err); }
+                try {
+                    await firebaseAuth.signOut();
+                    currentUser = null;
+                    if (firebaseListenerRef) {
+                        firebaseListenerRef.off();
+                        firebaseListenerRef = null;
+                    }
+                    showMessage(T().firebase.logoutSuccess, 'success');
+                    updateFirebaseUI();
+                    allHistoryData = {};
+                    data = {};
+                    originalStudentNames = [];
+                    studentNames = [];
+                    refreshUI();
+                } catch (err) { console.error(err); }
             }
 
-            loginBtn.addEventListener('click', function(){ if(currentUser) logout(); else showLoginForm(); });
+            loginBtn.addEventListener('click', function() { if (currentUser) logout();
+                else showLoginForm(); });
             submitLogin.addEventListener('click', loginWithEmail);
             registerBtn.addEventListener('click', registerWithEmail);
             anonLogin.addEventListener('click', loginAnonymously);
             cancelLogin.addEventListener('click', hideLoginForm);
-            useLocalBtn.addEventListener('click', function(){ setStorageMode('local'); });
-            useCloudBtn.addEventListener('click', function(){ setStorageMode('cloud'); });
-            syncDataBtn.addEventListener('click', async function(){
-                if(!currentUser || storageMode!=='cloud') { showMessage('فعّل السحابة وسجل الدخول','error'); return; }
+            useLocalBtn.addEventListener('click', function() { setStorageMode('local'); });
+            useCloudBtn.addEventListener('click', function() { setStorageMode('cloud'); });
+            syncDataBtn.addEventListener('click', async function() {
+                if (!currentUser || storageMode !== 'cloud') { showMessage('فعّل السحابة وسجل دخول', 'error'); return; }
                 var saved = await saveAll(true);
-                if(saved) showMessage(T.firebase.syncSuccess,'success');
+                if (saved) showMessage(T().firebase.syncSuccess, 'success');
             });
 
-            // ===== مسح جميع البيانات =====
+            // ===== حذف كل البيانات =====
             clearAllDataBtn.addEventListener('click', async function() {
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                if(!confirm('🔥 حذف جميع البيانات؟ لا يمكن التراجع!')) return;
-                if(prompt('اكتب "حذف" للتأكيد')!=='حذف') { showMessage('تم الإلغاء','error'); return; }
+                if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
+                if (!confirm('🔥 حذف كل البيانات؟ لا يمكن التراجع!')) return;
+                if (prompt('اكتب "حذف" للتأكيد') !== 'حذف') { showMessage('تم الإلغاء', 'error'); return; }
                 try {
                     var snap = await firebaseDb.ref('users').once('value');
-                    var dbUsers=snap.val()||{};
-                    for(var uid in dbUsers) {
-                        var email = dbUsers[uid]?.profile?.email||'';
-                        if(email==='a7112119@gmail.com') { await firebaseDb.ref('users/'+uid+'/supervisors').remove(); continue; }
-                        await firebaseDb.ref('users/'+uid).remove();
+                    var dbUsers = snap.val() || {};
+                    for (var uid in dbUsers) {
+                        var email = dbUsers[uid]?.profile?.email || '';
+                        if (email === 'a7112119@gmail.com') { await firebaseDb.ref('users/' + uid + '/teachers').remove(); continue; }
+                        await firebaseDb.ref('users/' + uid).remove();
                     }
                     localStorage.clear();
                     supervisorsList = defaultSupervisors;
@@ -1571,63 +1606,201 @@
                     saveClassesList();
                     initSupervisorSelect();
                     updateClassSelect();
-                    initStudentsUI(); updateTable(); updateStats();
-                    boardTitleEl.textContent=T.boardTitle;
-                    showMessage('✅ تم مسح جميع البيانات','success');
-                    setTimeout(()=>location.reload(),1500);
-                } catch(err) { showMessage('❌ '+err.message,'error'); }
+                    refreshUI();
+                    boardTitleEl.textContent = T().boardTitle;
+                    showMessage('✅ تم حذف كل البيانات', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } catch (err) { showMessage('❌ ' + err.message, 'error'); }
             });
 
             // ===== حذف جميع المستخدمين =====
-            deleteAllUsersBtn.addEventListener('click', async function(){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                if(!confirm('حذف جميع المستخدمين ما عدا المدير؟')) return;
+            deleteAllUsersBtn.addEventListener('click', async function() {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف', 'error'); return; }
+                if (!confirm('حذف جميع المستخدمين ما عدا المشرف؟')) return;
                 try {
-                    var snap=await firebaseDb.ref('users').once('value');
-                    var dbUsers=snap.val()||{};
-                    for(var uid in dbUsers) {
-                        var email=dbUsers[uid]?.profile?.email||'';
-                        if(email==='a7112119@gmail.com') continue;
-                        await firebaseDb.ref('users/'+uid).remove();
+                    var snap = await firebaseDb.ref('users').once('value');
+                    var dbUsers = snap.val() || {};
+                    for (var uid in dbUsers) {
+                        var email = dbUsers[uid]?.profile?.email || '';
+                        if (email === 'a7112119@gmail.com') continue;
+                        await firebaseDb.ref('users/' + uid).remove();
                     }
-                    showMessage('✅ تم حذف المستخدمين','success');
-                } catch(err){ showMessage('❌ '+err.message,'error'); }
+                    showMessage('✅ تم حذف المستخدمين', 'success');
+                } catch (err) { showMessage('❌ ' + err.message, 'error'); }
             });
 
-            // ===== إصلاح البريد الإلكتروني =====
-            fixEmailsBtn.addEventListener('click', async function(){
-                if(!isAdminUser()) { showMessage('مدير فقط','error'); return; }
-                showMessage('جاري إصلاح البريد...','info');
+            // ===== تصحيح الأيميلات =====
+            fixEmailsBtn.addEventListener('click', async function() {
+                if (!isAdminUser()) { showMessage('صلاحية مشرف', 'error'); return; }
+                showMessage('جاري تصحيح الأيميلات...', 'info');
                 try {
-                    var snap=await firebaseDb.ref('users').once('value');
-                    var dbUsers=snap.val()||{};
-                    var count=0;
-                    for(var uid in dbUsers) {
-                        if(!dbUsers[uid]?.profile?.email) {
-                            var email = prompt('أدخل البريد الإلكتروني للمستخدم (UID: '+uid.substring(0,12)+'...)');
-                            if(email && email.trim()) { await firebaseDb.ref('users/'+uid+'/profile/email').set(email.trim()); count++; }
+                    var snap = await firebaseDb.ref('users').once('value');
+                    var dbUsers = snap.val() || {};
+                    var count = 0;
+                    for (var uid in dbUsers) {
+                        if (!dbUsers[uid]?.profile?.email) {
+                            var email = prompt('أدخل بريد المستخدم (UID: ' + uid.substring(0, 12) + '...)');
+                            if (email && email.trim()) { await firebaseDb.ref('users/' + uid + '/profile/email').set(email.trim());
+                                count++; }
                         }
                     }
-                    showMessage('✅ تم إصلاح '+count+' بريد','success');
-                } catch(err){ showMessage('❌ '+err.message,'error'); }
+                    showMessage('✅ تم تصحيح ' + count + ' بريد', 'success');
+                } catch (err) { showMessage('❌ ' + err.message, 'error'); }
             });
+
+            // ===== اللغة (عربي فقط) =====
+            function applyLanguage() {
+                var lang = 'ar';
+                document.body.dir = 'rtl';
+                document.documentElement.lang = 'ar';
+                var t = T();
+                boardTitleEl.textContent = t.boardTitle + (classTitleInput.value ? ' - ' + classTitleInput.value : '');
+                importExcelLabel.textContent = '📥 تحميل أسماء من Excel';
+                exportExcel.textContent = '📤 تصدير Excel';
+                newTeacherNameInput.placeholder = t.newSupervisorPlaceholder;
+                newStudentNameInput.placeholder = t.newStudentPlaceholder;
+                deleteTeacherBtn.textContent = t.deleteSupervisor;
+                deleteAllTeachersBtn.textContent = t.deleteAll;
+                importTeachersLabel.innerHTML = t.importLabel;
+                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
+                if (sup) {
+                    var card = document.querySelector('.teacher-card .teacher-info p');
+                    if (card) card.textContent = 'الدور: ' + sup.subject;
+                }
+                localStorage.setItem('dashboard_lang', lang);
+                updateDisplayNames();
+                refreshUI();
+                renderCalendar();
+                updateFirebaseUI();
+                applyRoleVisibility();
+            }
+
+            // ===== دوال المشرفين =====
+            function saveSupervisorsList() { localStorage.setItem('supervisors_list', JSON.stringify(supervisorsList)); }
+
+            function initSupervisorSelect() {
+                teacherSelect.innerHTML = '<option value="" disabled selected>-- اختر المشرف --</option>';
+                supervisorsList.forEach(s => {
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name + ' - ' + s.subject;
+                    teacherSelect.appendChild(opt);
+                });
+            }
+
+            function selectSupervisor(id) {
+                currentSupervisorId = id;
+                var sup = supervisorsList.find(s => s.id === id);
+                if (!sup) return;
+                var icon = sup.icon || 'fa-user-tie';
+                teacherCardContainer.innerHTML = '<div class="teacher-card"><div class="teacher-icon"><i class="fa-solid ' + icon + '"></i></div><div class="teacher-info"><h3>' + sup.name + '</h3><p>الدور: ' + sup.subject + '</p></div></div>';
+                if (currentClass) loadData();
+            }
+
+            // ===== دوال الأقسام =====
+            function saveClassesList() { localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(classesList)); }
+
+            function updateClassSelect() {
+                var sel = document.getElementById('classSelect');
+                var cur = sel.value;
+                sel.innerHTML = '';
+                classesList.forEach(c => { var opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    sel.appendChild(opt); });
+                if (classesList.includes(cur)) sel.value = cur;
+                else if (classesList.length) sel.value = classesList[0];
+                if (currentClass && !classesList.includes(currentClass)) currentClass = null;
+            }
+
+            function addNewClass() {
+                var newC = prompt('📚 أدخل اسم القسم الجديد:');
+                if (!newC) return;
+                newC = newC.trim().toUpperCase();
+                if (!newC || classesList.includes(newC)) { showMessage('⚠️ اسم مكرر أو غير صحيح', 'error'); return; }
+                classesList.push(newC);
+                saveClassesList();
+                updateClassSelect();
+                document.getElementById('classSelect').value = newC;
+                currentClass = newC;
+                showMessage('✅ تم إضافة القسم ' + newC, 'success');
+                if (currentSupervisorId) loadData();
+            }
+
+            function deleteCurrentClass() {
+                var cls = document.getElementById('classSelect').value;
+                if (!cls) return;
+                if (classesList.length <= 1) { showMessage('❌ لا يمكن حذف القسم الأخير', 'error'); return; }
+                if (!confirm('🗑️ حذف القسم ' + cls + '؟')) return;
+                classesList = classesList.filter(c => c !== cls);
+                saveClassesList();
+                updateClassSelect();
+                if (currentClass === cls) currentClass = classesList[0] || null;
+                if (currentSupervisorId && currentClass) loadData();
+                else { refreshUI(); }
+            }
+
+            addClassBtn.addEventListener('click', addNewClass);
+            deleteClassBtn.addEventListener('click', deleteCurrentClass);
+
+            // ===== isAdminUser =====
+            function isAdminUser() {
+                if (!currentUser) return false;
+                var adminEmails = ['a7112119@gmail.com', 'alalmagik@gmail.com'];
+                return adminEmails.includes(currentUser.email);
+            }
+
+            function applyRoleVisibility() {
+                var isAdmin = isAdminUser();
+                var teacherElements = [document.getElementById('teacherCardContainer'), document.getElementById('students'), document.getElementById('controls'), document.getElementById('report')];
+                var classSection = document.getElementById('classSelectSection');
+                var chartsSection = document.getElementById('adminChartsSection');
+                if (isAdmin) {
+                    teacherElements.forEach(el => { if (el) el.style.display = 'none'; });
+                    if (classSection) classSection.style.display = 'none';
+                    if (chartsSection) chartsSection.style.display = 'block';
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
+                    setTimeout(renderAdminCharts, 300);
+                } else {
+                    teacherElements.forEach(el => { if (el) el.style.display = ''; });
+                    if (classSection) classSection.style.display = '';
+                    if (chartsSection) chartsSection.style.display = 'none';
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('show'));
+                }
+            }
 
             // ===== التهيئة =====
             function init() {
+                // استعادة المستخدم الحالي من Firebase (لتثبيت الجلسة)
+                if (isFirebaseInitialized && firebaseAuth.currentUser) {
+                    currentUser = firebaseAuth.currentUser;
+                }
                 updateClassSelect();
                 initSupervisorSelect();
+                applyLanguage();
                 renderCalendar();
-                if(isFirebaseInitialized) {
-                    firebaseAuth.onAuthStateChanged(function(user){
+                updateFirebaseUI();
+                applyRoleVisibility();
+                if (isFirebaseInitialized) {
+                    firebaseAuth.onAuthStateChanged(function(user) {
                         currentUser = user;
                         updateFirebaseUI();
                         applyRoleVisibility();
-                        if(user && storageMode==='cloud' && currentSupervisorId && currentClass) loadData();
+                        if (user && storageMode === 'cloud' && currentSupervisorId && currentClass) {
+                            loadData();
+                        } else if (!user) {
+                            if (firebaseListenerRef) {
+                                firebaseListenerRef.off();
+                                firebaseListenerRef = null;
+                            }
+                        }
                         setTimeout(renderAdminCharts, 500);
                     });
                 }
-                setTimeout(function(){
-                    if(currentSupervisorId && currentClass) loadData();
+                setTimeout(function() {
+                    if (currentSupervisorId && currentClass) {
+                        loadData();
+                    }
                     applyRoleVisibility();
                     setTimeout(renderAdminCharts, 600);
                 }, 800);
