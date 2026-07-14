@@ -481,7 +481,7 @@
             function STORAGE_KEY_DATA() { return 'cafeteria_data_' + currentSupervisorId + '_' + currentClass; }
             function STORAGE_KEY_ORIGINAL_NAMES() { return 'cafeteria_names_' + currentSupervisorId + '_' + currentClass; }
 
-            // ===== تعريف showMessage في الأعلى =====
+            // ===== تعريف showMessage =====
             function showMessage(msg, type) {
                 type = type || 'info';
                 var div = document.createElement('div');
@@ -543,6 +543,13 @@
                         if (fbData.supervisorName) boardTitleEl.textContent = T().boardTitle + ' - ' + fbData.supervisorName;
                         ensureAllStudentsInData();
                         refreshUI();
+                        // تحديث واجهة المشرف إذا كان المستخدم مشرفاً
+                        if (isAdminUser()) {
+                            setTimeout(function() {
+                                renderAdminCharts();
+                                renderAdminTable();
+                            }, 300);
+                        }
                         showMessage('تم تحديث البيانات من السحابة فوراً', 'success');
                     }
                 }, function(error) {
@@ -577,6 +584,13 @@
                 updateTable();
                 updateStats();
                 updateDateDisplay();
+                // إذا كان المستخدم مشرفاً، نقوم بتحديث لوحة المشرف
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 300);
+                }
             }
 
             // ===== دوال البيانات =====
@@ -992,6 +1006,7 @@
             // ===== دوال المشرف =====
             function renderAdminCharts() {
                 if (!isAdminUser()) return;
+                // إعادة تهيئة المخططات بعد تحميل البيانات
                 var results = getAllLocalStorageData();
                 if (results.length === 0) {
                     document.querySelector('#adminChartsSection .charts-grid').innerHTML = '<div style="text-align:center;padding:40px 0;color:#999;">لا توجد بيانات كافية</div>';
@@ -1010,8 +1025,12 @@
                     posCounts.cooperate += r.cooperate || 0;
                 });
 
+                // حذف المخططات القديمة إذا وجدت
                 var ctxV = document.getElementById('violationChart').getContext('2d');
-                new Chart(ctxV, {
+                if (window.violationChartInstance) {
+                    window.violationChartInstance.destroy();
+                }
+                window.violationChartInstance = new Chart(ctxV, {
                     type: 'bar',
                     data: {
                         labels: ['تشاجر', 'تنمر', 'إزعاج', 'رمي نفايات', 'عبث ممتلكات'],
@@ -1020,7 +1039,10 @@
                     options: { responsive: true, maintainAspectRatio: false }
                 });
                 var ctxP = document.getElementById('positiveChart').getContext('2d');
-                new Chart(ctxP, {
+                if (window.positiveChartInstance) {
+                    window.positiveChartInstance.destroy();
+                }
+                window.positiveChartInstance = new Chart(ctxP, {
                     type: 'bar',
                     data: {
                         labels: ['نظافة', 'احترام', 'تعاون'],
@@ -1476,7 +1498,16 @@
                 if (mode === 'cloud' && !currentUser) { showMessage(T().firebase.authError, 'error');
                     showLoginForm(); return; }
                 updateFirebaseUI();
-                if (currentSupervisorId && currentClass) loadData();
+                // إعادة تحميل البيانات وتحديث واجهة المشرف
+                if (currentSupervisorId && currentClass) {
+                    loadData();
+                } else if (isAdminUser()) {
+                    // إذا كان المشرف لا يوجد مشرف محدد، نقوم بتحديث لوحة المشرف بالبيانات المتوفرة محلياً
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 300);
+                }
                 showMessage(mode === 'local' ? 'التخزين المحلي مفعل' : 'التخزين السحابي مفعل', 'success');
             }
 
@@ -1760,7 +1791,11 @@
                     if (classSection) classSection.style.display = 'none';
                     if (chartsSection) chartsSection.style.display = 'block';
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
-                    setTimeout(renderAdminCharts, 300);
+                    // تحديث لوحة المشرف فوراً
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 300);
                 } else {
                     teacherElements.forEach(el => { if (el) el.style.display = ''; });
                     if (classSection) classSection.style.display = '';
@@ -1800,6 +1835,12 @@
                 setTimeout(function() {
                     if (currentSupervisorId && currentClass) {
                         loadData();
+                    } else if (isAdminUser()) {
+                        // إذا كان المستخدم مشرفاً ولم يتم اختيار مشرف/قسم، نعرض البيانات المتوفرة
+                        setTimeout(function() {
+                            renderAdminCharts();
+                            renderAdminTable();
+                        }, 600);
                     }
                     applyRoleVisibility();
                     setTimeout(renderAdminCharts, 600);
