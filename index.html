@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* === نفس الأنماط الأصلية مع تعديل طفيف في الألوان والنصوص === */
+        /* === الأنماط الأساسية === */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { padding: 15px; background: #f3f4f6; color: #111; transition: 0.3s; }
         .firebase-section { background: linear-gradient(135deg, #0b6e4f, #2d9b7a); color: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
@@ -169,12 +169,6 @@
         <div id="loginMessage" style="margin-top:10px; font-size:12px;"></div>
     </div>
 
-    <!-- ===== أزرار اللغة ===== -->
-    <div id="languageToggle">
-        <button id="switchToAr" class="active">العربية</button>
-        <button id="switchToEn">English</button>
-    </div>
-
     <!-- ===== التقويم ===== -->
     <div class="calendar-wrapper" id="calendarWrapper">
         <div class="calendar-header">
@@ -198,7 +192,7 @@
         </div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:flex-end;">
             <button id="addTeacherBtn" class="btn-add-teacher">➕ إضافة مشرف</button>
-            <label for="importTeachersExcel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> تحميل مشرفين</label>
+            <label for="importTeachersExcel" id="importTeachersLabel" class="btn-import-teachers"><i class="fas fa-file-excel"></i> تحميل مشرفين</label>
             <input type="file" id="importTeachersExcel" accept=".xlsx" style="display:none;">
             <button id="deleteTeacherBtn" class="btn-delete-teacher">🗑️ حذف</button>
             <button id="deleteAllTeachersBtn" class="btn-delete-teacher">💥 حذف الكل</button>
@@ -255,23 +249,23 @@
         <table id="report">
             <thead>
                 <tr>
-                    <th data-key="name">الاسم</th>
-                    <th data-key="rating">⭐ التقييم</th>
-                    <th data-key="entry">⏱️ دخول</th>
-                    <th data-key="exit">⏱️ خروج</th>
-                    <th data-key="status">الحالة</th>
-                    <th data-key="positives">✅ إيجابيات</th>
-                    <th data-key="violations">🚫 مخالفات</th>
-                    <th data-key="clean">نظافة</th>
-                    <th data-key="respect">احترام</th>
-                    <th data-key="cooperate">تعاون</th>
-                    <th data-key="fight">تشاجر</th>
-                    <th data-key="bullying">تنمر</th>
-                    <th data-key="noise">إزعاج</th>
-                    <th data-key="litter">رمي نفايات</th>
-                    <th data-key="property">عبث بممتلكات</th>
-                    <th data-key="commitment">نسبة الالتزام</th>
-                    <th data-key="notes">ملاحظات</th>
+                    <th>الاسم</th>
+                    <th>⭐ التقييم</th>
+                    <th>⏱️ دخول</th>
+                    <th>⏱️ خروج</th>
+                    <th>الحالة</th>
+                    <th>✅ إيجابيات</th>
+                    <th>🚫 مخالفات</th>
+                    <th>نظافة</th>
+                    <th>احترام</th>
+                    <th>تعاون</th>
+                    <th>تشاجر</th>
+                    <th>تنمر</th>
+                    <th>إزعاج</th>
+                    <th>رمي نفايات</th>
+                    <th>عبث بممتلكات</th>
+                    <th>نسبة الالتزام</th>
+                    <th>ملاحظات</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -339,7 +333,7 @@
     </div>
 
     <script>
-        // ===== إعدادات Firebase (نفسها) =====
+        // ===== إعدادات Firebase =====
         var firebaseConfig = {
             apiKey: "AIzaSyCTQUJV6erfDYbjId7xpuRDPwTmaGGk4e4",
             authDomain: "mohamedreda-718c9.firebaseapp.com",
@@ -350,7 +344,7 @@
             measurementId: "G-9QP9FDF9MR"
         };
         var firebaseApp, firebaseAuth, firebaseDb, isFirebaseInitialized = false;
-        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("Firebase init error", e); }
+        try { firebaseApp = firebase.initializeApp(firebaseConfig); firebaseAuth = firebase.auth(); firebaseDb = firebase.database(); isFirebaseInitialized = true; } catch(e) { console.log("خطأ في تهيئة Firebase", e); }
 
         document.addEventListener("DOMContentLoaded", function() {
             // ===== البيانات الافتراضية =====
@@ -363,7 +357,7 @@
 
             var supervisorsList = JSON.parse(localStorage.getItem('supervisors_list')) || defaultSupervisors;
             var classesList = JSON.parse(localStorage.getItem(CLASSES_STORAGE_KEY)) || defaultClasses;
-            var currentLang = localStorage.getItem('dashboard_lang') || 'ar';
+            var currentLang = 'ar'; // ثابت عربي
             var currentSupervisorId = null;
             var currentClass = null;
             var storageMode = localStorage.getItem('storage_mode') || 'local';
@@ -423,6 +417,7 @@
             var viewAllDataBtn = document.getElementById("viewAllDataBtn");
             var importExcel = document.getElementById("importExcel");
             var exportExcel = document.getElementById("exportExcel");
+            var importTeachersLabel = document.getElementById("importTeachersLabel");
 
             var editModal = document.getElementById('editModal');
             var editStudentNameDisplay = document.getElementById('editStudentNameDisplay');
@@ -441,7 +436,7 @@
             var editModalSave = document.getElementById('editModalSave');
             var editModalCancel = document.getElementById('editModalCancel');
 
-            // ===== دوال الترجمة =====
+            // ===== قاموس الترجمة (عربي كامل) =====
             var translations = {
                 ar: {
                     boardTitle: "🍽️ لوحة إشراف المطعم",
@@ -470,38 +465,10 @@
                     violationLabels: { fight:"تشاجر", bullying:"تنمر", noise:"إزعاج", litter:"رمي نفايات", property:"عبث بممتلكات" },
                     firebase: { online:"متصل بالسحابة", offline:"تخزين محلي", syncSuccess:"تمت المزامنة", syncError:"خطأ في المزامنة", loginSuccess:"تم الدخول", logoutSuccess:"تم الخروج", registerSuccess:"تم التسجيل", authError:"خطأ" },
                     calendar: { days:["أحد","إثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"], months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"] }
-                },
-                en: {
-                    boardTitle: "🍽️ Cafeteria Supervision Board",
-                    deleteSupervisor: "Delete Supervisor 🗑️",
-                    deleteStudent: "Delete Student 🗑️",
-                    deleteAll: "💥 Delete All",
-                    importLabel: "<i class='fas fa-file-excel'></i> Import Supervisors",
-                    confirmDeleteSupervisor: "Delete this supervisor?",
-                    confirmDeleteStudent: function(n){ return 'Delete student: '+n+'?'; },
-                    confirmDeleteAll: "Delete all supervisors?",
-                    errorSelectSupervisor: "Select a supervisor first",
-                    errorSelectClass: "Select a class first",
-                    studentAdded: "Student added",
-                    supervisorDeleted: "Supervisor deleted",
-                    studentDeleted: "Student deleted",
-                    allDeleted: "All supervisors deleted",
-                    newSupervisorPlaceholder: "Supervisor name...",
-                    newStudentPlaceholder: "Add student...",
-                    resetConfirm: "Reset all counters for today?",
-                    resetSuccess: "Today reset",
-                    entry: "Entry",
-                    exit: "Exit",
-                    committed: "Committed",
-                    needsFollow: "Needs follow-up",
-                    positiveLabels: { clean:"Cleanliness", respect:"Respect", cooperate:"Cooperation" },
-                    violationLabels: { fight:"Fight", bullying:"Bullying", noise:"Noise", litter:"Littering", property:"Property damage" },
-                    firebase: { online:"Cloud connected", offline:"Local storage", syncSuccess:"Synced", syncError:"Sync error", loginSuccess:"Logged in", logoutSuccess:"Logged out", registerSuccess:"Registered", authError:"Error" },
-                    calendar: { days:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], months:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] }
                 }
             };
 
-            function t() { return translations[currentLang]; }
+            function t() { return translations['ar']; }
 
             // ===== دوال مساعدة =====
             function formattedSelectedDate() {
@@ -691,36 +658,12 @@
                 initStudentsUI();
                 updateTable();
                 updateStats();
-                applyLanguage(currentLang);
                 applyRoleVisibility();
             }
 
             function updateDisplayNames() {
-                if(originalStudentNames.length===0) { studentNames=[]; return; }
-                if(currentLang==='en') {
-                    studentNames = originalStudentNames.map(n=> arabicToEnglishTransliteration(n));
-                } else {
-                    studentNames = originalStudentNames.slice();
-                }
-            }
-
-            function arabicToEnglishTransliteration(arabicName) {
-                if(!arabicName) return arabicName;
-                var map = { 'ا':'a','أ':'a','إ':'e','آ':'aa','ء':'','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ؤ':'w','ي':'y','ى':'a','ئ':'e','ة':'h' };
-                var parts = arabicName.trim().split(/\s+/);
-                var translated = parts.map(p=>{
-                    if(!/[\u0600-\u06FF]/.test(p)) return p;
-                    var result='';
-                    for(var i=0;i<p.length;i++) {
-                        var ch=p[i];
-                        var next = i<p.length-1 ? p[i+1] : '';
-                        if(map[ch+next]) { result+=map[ch+next]; i++; }
-                        else if(map[ch]) result+=map[ch];
-                        else result+=ch;
-                    }
-                    return result.charAt(0).toUpperCase() + result.slice(1);
-                });
-                return translated.join(' ');
+                // بما أن اللغة عربية فقط، نستخدم الأسماء الأصلية
+                studentNames = originalStudentNames.slice();
             }
 
             function updateDateDisplay() { currentDateDisplayEl.textContent = formattedSelectedDate(); }
@@ -728,7 +671,7 @@
             // ===== دوال التقويم =====
             function renderCalendar() {
                 calendarGrid.innerHTML = '';
-                var t = translations[currentLang].calendar;
+                var t = translations['ar'].calendar;
                 t.days.forEach(d=>{ var h=document.createElement('div'); h.className='calendar-day-name'; h.textContent=d; calendarGrid.appendChild(h); });
                 var year=calendarDate.getFullYear(), month=calendarDate.getMonth();
                 calendarTitle.textContent = t.months[month] + ' ' + year;
@@ -882,7 +825,6 @@
                 var now = new Date();
                 var timeStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
                 data[originalName].exitTime = timeStr;
-                // عند الخروج يُحسب التقييم تلقائياً (حالة 0 إذا كانت الإيجابيات > المخالفات)
                 var pos = data[originalName].positive;
                 var vio = data[originalName].violations;
                 var totalPos = pos.clean + pos.respect + pos.cooperate;
@@ -908,7 +850,6 @@
                 if(idx===-1) return;
                 var originalName = originalStudentNames[idx] || displayName;
                 data[originalName].violations[key] = (data[originalName].violations[key]||0) + 1;
-                // تحديث الحالة إذا زادت المخالفات
                 var pos = data[originalName].positive;
                 var vio = data[originalName].violations;
                 var totalPos = pos.clean + pos.respect + pos.cooperate;
@@ -967,9 +908,7 @@
                     if(totalV>0) violations += totalV;
                     fights += vio.fight||0;
                     bullying += vio.bullying||0;
-                    // تنبيهات = عدد المخالفات التي تزيد عن 3 لكل طالب
                     if(totalV>=3) warnings++;
-                    // إحصاء الفصل
                     var cls = currentClass || 'غير محدد';
                     if(!classStats[cls]) classStats[cls] = { students:0, violations:0 };
                     classStats[cls].students++;
@@ -983,7 +922,6 @@
                 document.getElementById('statFights').textContent = fights;
                 document.getElementById('statBullying').textContent = bullying;
 
-                // أفضل وأسوأ فصل
                 var bestClass = '-', worstClass = '-';
                 var bestScore = -1, worstScore = Infinity;
                 Object.keys(classStats).forEach(c=>{
@@ -1531,18 +1469,18 @@
 
             // ===== Firebase Auth =====
             function updateFirebaseUI() {
-                var t = translations[currentLang];
+                var t = translations['ar'];
                 if(currentUser) {
                     var email = currentUser.email || t.firebase.offline;
                     firebaseStatus.innerHTML = '<i class="fas fa-user"></i> '+email.substring(0,20);
                     firebaseStatus.className = 'firebase-status online';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> '+(currentLang==='ar'?'تسجيل الخروج':'Logout');
+                    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج';
                     if(isAdminUser()) document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('show'));
                     else document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
                 } else {
                     firebaseStatus.innerHTML = '<i class="fas fa-wifi"></i> '+t.firebase.offline;
                     firebaseStatus.className = 'firebase-status offline';
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> '+(currentLang==='ar'?'تسجيل الدخول':'Login');
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
                     document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('show'));
                 }
                 if(storageMode==='local') { useLocalBtn.style.opacity='1'; useCloudBtn.style.opacity='0.7'; }
@@ -1554,7 +1492,7 @@
             function setStorageMode(mode) {
                 storageMode=mode;
                 localStorage.setItem('storage_mode',mode);
-                if(mode==='cloud' && !currentUser) { showMessage(t().firebase.authError,'error'); showLoginForm(); return; }
+                if(mode==='cloud' && !currentUser) { showMessage(t.firebase.authError,'error'); showLoginForm(); return; }
                 updateFirebaseUI();
                 if(currentSupervisorId && currentClass) loadData();
                 showMessage(mode==='local'?'التخزين المحلي مفعل':'التخزين السحابي مفعل','success');
@@ -1697,17 +1635,15 @@
                 } catch(err){ showMessage('❌ '+err.message,'error'); }
             });
 
-            // ===== اللغة =====
-            function applyLanguage(lang) {
-                currentLang=lang;
-                document.body.dir=lang==='ar'?'rtl':'ltr';
-                document.documentElement.lang=lang;
-                var t = translations[lang];
-                document.getElementById('switchToAr').classList.toggle('active',lang==='ar');
-                document.getElementById('switchToEn').classList.toggle('active',lang==='en');
+            // ===== اللغة (عربي فقط) =====
+            function applyLanguage() {
+                var lang = 'ar';
+                document.body.dir='rtl';
+                document.documentElement.lang='ar';
+                var t = translations['ar'];
                 boardTitleEl.textContent = t.boardTitle + (classTitleInput.value ? ' - '+classTitleInput.value : '');
-                importExcelLabel.textContent = lang==='ar'?'📥 تحميل أسماء من Excel':'📥 Import Excel';
-                exportExcel.textContent = lang==='ar'?'📤 تصدير Excel':'📤 Export Excel';
+                importExcelLabel.textContent = '📥 تحميل أسماء من Excel';
+                exportExcel.textContent = '📤 تصدير Excel';
                 newTeacherNameInput.placeholder = t.newSupervisorPlaceholder;
                 newStudentNameInput.placeholder = t.newStudentPlaceholder;
                 deleteTeacherBtn.textContent = t.deleteSupervisor;
@@ -1716,7 +1652,7 @@
                 var sup = supervisorsList.find(s=>s.id===currentSupervisorId);
                 if(sup) {
                     var card = document.querySelector('.teacher-card .teacher-info p');
-                    if(card) card.textContent = lang==='ar'?'الدور: '+sup.subject:'Role: '+sup.subject;
+                    if(card) card.textContent = 'الدور: '+sup.subject;
                 }
                 localStorage.setItem('dashboard_lang', lang);
                 updateDisplayNames();
@@ -1725,14 +1661,11 @@
                 applyRoleVisibility();
             }
 
-            document.getElementById('switchToAr').addEventListener('click', function(){ applyLanguage('ar'); });
-            document.getElementById('switchToEn').addEventListener('click', function(){ applyLanguage('en'); });
-
             // ===== تهيئة =====
             function init() {
                 updateClassSelect();
                 initSupervisorSelect();
-                applyLanguage(currentLang);
+                applyLanguage();
                 renderCalendar();
                 if(isFirebaseInitialized) {
                     firebaseAuth.onAuthStateChanged(function(user){
