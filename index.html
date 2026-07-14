@@ -69,7 +69,8 @@
         .teacher-icon { font-size: 2rem; background: rgba(255,255,255,0.2); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
         [dir="rtl"] .teacher-icon { margin-left: 15px; } [dir="ltr"] .teacher-icon { margin-right: 15px; }
         .teacher-info h3 { margin: 0; font-size: 1.2rem; }
-        .teacher-info p { margin: 3px 0 0; opacity: 0.9; font-size: 1rem; }
+        .teacher-info p { margin: 3px 0 0; opacity: 0.9; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .teacher-info p i { margin-left: 4px; }
         h2 { text-align: center; margin-bottom: 12px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .calendar-toggle-btn { background: none; border: none; cursor: pointer; color: #0b6e4f; font-size: 1.4rem; transition: 0.2s; }
         .calendar-toggle-btn:hover { transform: scale(1.1); color: #2d9b7a; }
@@ -322,7 +323,7 @@
             </div>
             <div class="admin-table-container" style="overflow-x:auto; max-height:60vh; border:1px solid #ddd; border-radius:6px;">
                 <table id="adminViewTable">
-                    <thead><tr><th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
+                    <thead><tr><th>المشرف</th><th>القسم</th><th>التاريخ</th><th>الطالب</th><th>دخول</th><th>خروج</th><th>الحالة</th><th>القسم</th><th>نظافة</th><th>احترام</th><th>تعاون</th><th>تشاجر</th><th>تنمر</th><th>إزعاج</th><th>رمي نفايات</th><th>عبث ممتلكات</th><th>نسبة الالتزام</th><th>ملاحظات</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -357,7 +358,7 @@
 
             var supervisorsList = JSON.parse(localStorage.getItem('supervisors_list')) || defaultSupervisors;
             var classesList = JSON.parse(localStorage.getItem(CLASSES_STORAGE_KEY)) || defaultClasses;
-            var currentLang = 'ar'; // ثابت عربي
+            var currentLang = 'ar';
             var currentSupervisorId = null;
             var currentClass = null;
             var storageMode = localStorage.getItem('storage_mode') || 'local';
@@ -366,10 +367,9 @@
             var studentNames = [];
             var calendarDate = new Date();
             var selectedDate = new Date();
-            var data = {};               // بيانات اليوم الحالي
-            var allHistoryData = {};     // { dateKey: { studentName: { ... } } }
-            var selectedStudent = null;
-            var firebaseListenerRef = null; // مرجع الاستماع للتحديثات
+            var data = {};
+            var allHistoryData = {};
+            var firebaseListenerRef = null;
 
             // ===== عناصر DOM =====
             var teacherSelect = document.getElementById("teacherSelect");
@@ -437,7 +437,7 @@
             var editModalSave = document.getElementById('editModalSave');
             var editModalCancel = document.getElementById('editModalCancel');
 
-            // ===== قاموس الترجمة (عربي كامل) =====
+            // ===== قاموس الترجمة =====
             var translations = {
                 ar: {
                     boardTitle: "🍽️ لوحة إشراف المطعم",
@@ -481,7 +481,6 @@
             function STORAGE_KEY_DATA() { return 'cafeteria_data_' + currentSupervisorId + '_' + currentClass; }
             function STORAGE_KEY_ORIGINAL_NAMES() { return 'cafeteria_names_' + currentSupervisorId + '_' + currentClass; }
 
-            // ===== تعريف showMessage =====
             function showMessage(msg, type) {
                 type = type || 'info';
                 var div = document.createElement('div');
@@ -494,18 +493,15 @@
                 setTimeout(function() { if (div.parentNode) div.parentNode.removeChild(div); }, 4000);
             }
 
-            // ===== الدوال المعدلة حسب الطلب =====
-            // 1. تغيير دالة FIREBASE_PATH
+            // ===== دوال Firebase المعدلة - المسار العام حسب قواعد الأمان =====
             function FIREBASE_PATH() {
-                // المسار العام بدون uid
                 return 'supervisors/' + currentSupervisorId + '/classes/' + currentClass;
             }
 
-            // 2. تغيير دالة saveToFirebase
             async function saveToFirebase() {
-                if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return;
+                if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return false;
                 var path = FIREBASE_PATH();
-                if (!path) return;
+                if (!path) return false;
                 var sup = supervisorsList.find(s => s.id === currentSupervisorId);
                 var saveData = {
                     datesData: allHistoryData,
@@ -524,7 +520,6 @@
                 }
             }
 
-            // 3. دالة الاستماع للتحديثات
             function listenToFirebase() {
                 if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return;
                 var path = FIREBASE_PATH();
@@ -543,12 +538,11 @@
                         if (fbData.supervisorName) boardTitleEl.textContent = T().boardTitle + ' - ' + fbData.supervisorName;
                         ensureAllStudentsInData();
                         refreshUI();
-                        // تحديث واجهة المشرف إذا كان المستخدم مشرفاً
                         if (isAdminUser()) {
                             setTimeout(function() {
                                 renderAdminCharts();
                                 renderAdminTable();
-                            }, 300);
+                            }, 100);
                         }
                         showMessage('تم تحديث البيانات من السحابة فوراً', 'success');
                     }
@@ -557,7 +551,6 @@
                 });
             }
 
-            // 4. تغيير دالة loadFromFirebase
             async function loadFromFirebase() {
                 if (!isFirebaseInitialized || !currentUser || storageMode !== 'cloud') return false;
                 var path = FIREBASE_PATH();
@@ -576,7 +569,28 @@
                 } catch (e) { console.error(e); return false; }
             }
 
-            // دالة تحديث الواجهة (refreshUI)
+            function updateSupervisorCard() {
+                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
+                if (!sup) {
+                    teacherCardContainer.innerHTML = '';
+                    return;
+                }
+                var icon = sup.icon || 'fa-user-tie';
+                var className = currentClass || 'غير محدد';
+                teacherCardContainer.innerHTML = `
+                    <div class="teacher-card">
+                        <div class="teacher-icon"><i class="fa-solid ${icon}"></i></div>
+                        <div class="teacher-info">
+                            <h3>${sup.name}</h3>
+                            <p>
+                                <span><i class="fas fa-user-tag"></i> الدور: ${sup.subject}</span>
+                                <span><i class="fas fa-book"></i> القسم: ${className}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+
             function refreshUI() {
                 updateDisplayNames();
                 ensureAllStudentsInData();
@@ -584,12 +598,12 @@
                 updateTable();
                 updateStats();
                 updateDateDisplay();
-                // إذا كان المستخدم مشرفاً، نقوم بتحديث لوحة المشرف
+                updateSupervisorCard();
                 if (isAdminUser()) {
                     setTimeout(function() {
                         renderAdminCharts();
                         renderAdminTable();
-                    }, 300);
+                    }, 100);
                 }
             }
 
@@ -634,7 +648,6 @@
                 var loaded = false;
                 if (storageMode === 'cloud' && currentUser && isFirebaseInitialized) {
                     loaded = await loadFromFirebase();
-                    // بعد تحميل البيانات، نبدأ الاستماع للتحديثات
                     listenToFirebase();
                 }
                 if (!loaded) loadDataFromLocalStorage();
@@ -1006,7 +1019,6 @@
             // ===== دوال المشرف =====
             function renderAdminCharts() {
                 if (!isAdminUser()) return;
-                // إعادة تهيئة المخططات بعد تحميل البيانات
                 var results = getAllLocalStorageData();
                 if (results.length === 0) {
                     document.querySelector('#adminChartsSection .charts-grid').innerHTML = '<div style="text-align:center;padding:40px 0;color:#999;">لا توجد بيانات كافية</div>';
@@ -1025,11 +1037,8 @@
                     posCounts.cooperate += r.cooperate || 0;
                 });
 
-                // حذف المخططات القديمة إذا وجدت
                 var ctxV = document.getElementById('violationChart').getContext('2d');
-                if (window.violationChartInstance) {
-                    window.violationChartInstance.destroy();
-                }
+                if (window.violationChartInstance) window.violationChartInstance.destroy();
                 window.violationChartInstance = new Chart(ctxV, {
                     type: 'bar',
                     data: {
@@ -1039,9 +1048,7 @@
                     options: { responsive: true, maintainAspectRatio: false }
                 });
                 var ctxP = document.getElementById('positiveChart').getContext('2d');
-                if (window.positiveChartInstance) {
-                    window.positiveChartInstance.destroy();
-                }
+                if (window.positiveChartInstance) window.positiveChartInstance.destroy();
                 window.positiveChartInstance = new Chart(ctxP, {
                     type: 'bar',
                     data: {
@@ -1103,8 +1110,15 @@
                 var results = getAllLocalStorageData();
                 results.forEach(r => {
                     var tr = document.createElement('tr');
-                    var cells = [r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime, r.state === 0 ? 'ملتزم' : 'متابعة', r.clean, r.respect, r.cooperate, r.fight, r.bullying, r.noise, r.litter, r.property,
-                        (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property) === 0 ? 100 : Math.round(((r.clean + r.respect + r.cooperate) / (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property)) * 100) + '%', r.note
+                    var cells = [
+                        r.supervisor, r.class, r.date, r.student, r.entryTime, r.exitTime,
+                        r.state === 0 ? 'ملتزم' : 'متابعة',
+                        r.class,
+                        r.clean, r.respect, r.cooperate,
+                        r.fight, r.bullying, r.noise, r.litter, r.property,
+                        (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property) === 0 ? 100 :
+                        Math.round(((r.clean + r.respect + r.cooperate) / (r.clean + r.respect + r.cooperate + r.fight + r.bullying + r.noise + r.litter + r.property)) * 100) + '%',
+                        r.note
                     ];
                     cells.forEach(v => { var td = document.createElement('td');
                         td.textContent = v;
@@ -1114,7 +1128,7 @@
                 if (results.length === 0) {
                     var tr = document.createElement('tr');
                     var td = document.createElement('td');
-                    td.colSpan = 17;
+                    td.colSpan = 18;
                     td.textContent = 'لا توجد بيانات';
                     tr.appendChild(td);
                     tbodyAdmin.appendChild(tr);
@@ -1263,8 +1277,27 @@
             };
 
             // ===== ربط الأحداث =====
-            teacherSelect.addEventListener('change', function(e) { selectSupervisor(e.target.value); });
-            classSelect.addEventListener('change', function(e) { currentClass = e.target.value; if (currentSupervisorId) loadData(); });
+            teacherSelect.addEventListener('change', function(e) {
+                selectSupervisor(e.target.value);
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
+            });
+
+            classSelect.addEventListener('change', function(e) {
+                currentClass = e.target.value;
+                if (currentSupervisorId) loadData();
+                else updateSupervisorCard();
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
+            });
 
             addTeacherBtn.addEventListener('click', function() {
                 if (!isAdminUser()) { showMessage('صلاحية مشرف فقط', 'error'); return; }
@@ -1280,6 +1313,12 @@
                 newTeacherNameInput.value = '';
                 newTeacherSubjectSelect.value = '';
                 showMessage('✅ تم إضافة المشرف', 'success');
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
             });
 
             deleteTeacherBtn.addEventListener('click', function() {
@@ -1301,6 +1340,12 @@
                 boardTitleEl.textContent = T().boardTitle;
                 initSupervisorSelect();
                 showMessage(T().supervisorDeleted, 'success');
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
             });
 
             deleteAllTeachersBtn.addEventListener('click', function() {
@@ -1316,6 +1361,12 @@
                 boardTitleEl.textContent = T().boardTitle;
                 initSupervisorSelect();
                 showMessage(T().allDeleted, 'success');
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
             });
 
             importTeachersInput.addEventListener('change', function(e) {
@@ -1341,6 +1392,12 @@
                             initSupervisorSelect();
                             showMessage('تم استيراد ' + added + ' مشرف', 'success'); } else showMessage('لم يتم إضافة مشرفين', 'info');
                         importTeachersInput.value = '';
+                        if (isAdminUser()) {
+                            setTimeout(function() {
+                                renderAdminCharts();
+                                renderAdminTable();
+                            }, 100);
+                        }
                     } catch (err) { showMessage('خطأ في قراءة الملف', 'error'); }
                 };
                 reader.readAsBinaryString(file);
@@ -1498,15 +1555,13 @@
                 if (mode === 'cloud' && !currentUser) { showMessage(T().firebase.authError, 'error');
                     showLoginForm(); return; }
                 updateFirebaseUI();
-                // إعادة تحميل البيانات وتحديث واجهة المشرف
                 if (currentSupervisorId && currentClass) {
                     loadData();
                 } else if (isAdminUser()) {
-                    // إذا كان المشرف لا يوجد مشرف محدد، نقوم بتحديث لوحة المشرف بالبيانات المتوفرة محلياً
                     setTimeout(function() {
                         renderAdminCharts();
                         renderAdminTable();
-                    }, 300);
+                    }, 100);
                 }
                 showMessage(mode === 'local' ? 'التخزين المحلي مفعل' : 'التخزين السحابي مفعل', 'success');
             }
@@ -1590,12 +1645,12 @@
                         firebaseListenerRef = null;
                     }
                     showMessage(T().firebase.logoutSuccess, 'success');
-                    updateFirebaseUI();
                     allHistoryData = {};
                     data = {};
                     originalStudentNames = [];
                     studentNames = [];
                     refreshUI();
+                    updateFirebaseUI();
                 } catch (err) { console.error(err); }
             }
 
@@ -1626,6 +1681,7 @@
                         if (email === 'a7112119@gmail.com') { await firebaseDb.ref('users/' + uid + '/teachers').remove(); continue; }
                         await firebaseDb.ref('users/' + uid).remove();
                     }
+                    await firebaseDb.ref('supervisors').remove().catch(e => console.log(e));
                     localStorage.clear();
                     supervisorsList = defaultSupervisors;
                     classesList = defaultClasses;
@@ -1679,7 +1735,7 @@
                 } catch (err) { showMessage('❌ ' + err.message, 'error'); }
             });
 
-            // ===== اللغة (عربي فقط) =====
+            // ===== اللغة =====
             function applyLanguage() {
                 var lang = 'ar';
                 document.body.dir = 'rtl';
@@ -1693,11 +1749,6 @@
                 deleteTeacherBtn.textContent = t.deleteSupervisor;
                 deleteAllTeachersBtn.textContent = t.deleteAll;
                 importTeachersLabel.innerHTML = t.importLabel;
-                var sup = supervisorsList.find(s => s.id === currentSupervisorId);
-                if (sup) {
-                    var card = document.querySelector('.teacher-card .teacher-info p');
-                    if (card) card.textContent = 'الدور: ' + sup.subject;
-                }
                 localStorage.setItem('dashboard_lang', lang);
                 updateDisplayNames();
                 refreshUI();
@@ -1723,8 +1774,7 @@
                 currentSupervisorId = id;
                 var sup = supervisorsList.find(s => s.id === id);
                 if (!sup) return;
-                var icon = sup.icon || 'fa-user-tie';
-                teacherCardContainer.innerHTML = '<div class="teacher-card"><div class="teacher-icon"><i class="fa-solid ' + icon + '"></i></div><div class="teacher-info"><h3>' + sup.name + '</h3><p>الدور: ' + sup.subject + '</p></div></div>';
+                updateSupervisorCard();
                 if (currentClass) loadData();
             }
 
@@ -1756,6 +1806,13 @@
                 currentClass = newC;
                 showMessage('✅ تم إضافة القسم ' + newC, 'success');
                 if (currentSupervisorId) loadData();
+                updateSupervisorCard();
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
             }
 
             function deleteCurrentClass() {
@@ -1769,18 +1826,26 @@
                 if (currentClass === cls) currentClass = classesList[0] || null;
                 if (currentSupervisorId && currentClass) loadData();
                 else { refreshUI(); }
+                updateSupervisorCard();
+                if (isAdminUser()) {
+                    setTimeout(function() {
+                        renderAdminCharts();
+                        renderAdminTable();
+                    }, 100);
+                }
             }
 
             addClassBtn.addEventListener('click', addNewClass);
             deleteClassBtn.addEventListener('click', deleteCurrentClass);
 
-            // ===== isAdminUser =====
+            // ===== isAdminUser (المشرف الوحيد) =====
             function isAdminUser() {
                 if (!currentUser) return false;
-                var adminEmails = ['a7112119@gmail.com', 'alalmagik@gmail.com'];
+                var adminEmails = ['a7112119@gmail.com'];
                 return adminEmails.includes(currentUser.email);
             }
 
+            // ===== دالة الصلاحيات المعدلة (إظهار الفصول للمشرف) =====
             function applyRoleVisibility() {
                 var isAdmin = isAdminUser();
                 var teacherElements = [document.getElementById('teacherCardContainer'), document.getElementById('students'), document.getElementById('controls'), document.getElementById('report')];
@@ -1788,14 +1853,14 @@
                 var chartsSection = document.getElementById('adminChartsSection');
                 if (isAdmin) {
                     teacherElements.forEach(el => { if (el) el.style.display = 'none'; });
-                    if (classSection) classSection.style.display = 'none';
+                    // تعديل: إظهار قائمة الفصول للمشرف بدلاً من إخفائها
+                    if (classSection) classSection.style.display = '';
                     if (chartsSection) chartsSection.style.display = 'block';
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('show'));
-                    // تحديث لوحة المشرف فوراً
                     setTimeout(function() {
                         renderAdminCharts();
                         renderAdminTable();
-                    }, 300);
+                    }, 100);
                 } else {
                     teacherElements.forEach(el => { if (el) el.style.display = ''; });
                     if (classSection) classSection.style.display = '';
@@ -1804,9 +1869,8 @@
                 }
             }
 
-            // ===== التهيئة =====
+            // ===== دالة التهيئة المعدلة (اختيار أول مشرف وقسم تلقائياً) =====
             function init() {
-                // استعادة المستخدم الحالي من Firebase (لتثبيت الجلسة)
                 if (isFirebaseInitialized && firebaseAuth.currentUser) {
                     currentUser = firebaseAuth.currentUser;
                 }
@@ -1815,6 +1879,17 @@
                 applyLanguage();
                 renderCalendar();
                 updateFirebaseUI();
+
+                // تحديد القسم والمسؤول الافتراضي تلقائياً لتظهر البيانات مباشرة
+                if (classesList && classesList.length > 0) {
+                    currentClass = document.getElementById('classSelect').value || classesList[0];
+                }
+                if (supervisorsList && supervisorsList.length > 0 && !currentSupervisorId) {
+                    currentSupervisorId = supervisorsList[0].id;
+                    teacherSelect.value = currentSupervisorId;
+                    selectSupervisor(currentSupervisorId);
+                }
+
                 applyRoleVisibility();
                 if (isFirebaseInitialized) {
                     firebaseAuth.onAuthStateChanged(function(user) {
@@ -1836,7 +1911,6 @@
                     if (currentSupervisorId && currentClass) {
                         loadData();
                     } else if (isAdminUser()) {
-                        // إذا كان المستخدم مشرفاً ولم يتم اختيار مشرف/قسم، نعرض البيانات المتوفرة
                         setTimeout(function() {
                             renderAdminCharts();
                             renderAdminTable();
